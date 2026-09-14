@@ -120,6 +120,25 @@ export function schemaStatements(dialect: Dialect): string[] {
       consumed_at ${ts}
     )`,
     `CREATE INDEX IF NOT EXISTS ix_capability_lease_task ON capability_leases (task_id, id)`,
+    `CREATE TABLE IF NOT EXISTS effect_fences (
+      id ${pk},
+      effect_key TEXT NOT NULL UNIQUE,
+      task_id INTEGER NOT NULL,
+      tenant TEXT NOT NULL,
+      capability TEXT NOT NULL,
+      action_digest TEXT NOT NULL,
+      interlock_generation INTEGER NOT NULL,
+      fence_token TEXT NOT NULL,
+      idempotency_key TEXT NOT NULL UNIQUE,
+      provider TEXT NOT NULL,
+      state TEXT NOT NULL CHECK (state IN ('READY','IN_FLIGHT','COMPLETED','PENDING_RECONCILIATION','FAILED')),
+      provider_effect_id TEXT,
+      response_digest TEXT,
+      attempt_count INTEGER NOT NULL DEFAULT 0,
+      created_at ${ts} NOT NULL,
+      updated_at ${ts} NOT NULL
+    )`,
+    `CREATE INDEX IF NOT EXISTS ix_effect_fences_task ON effect_fences (task_id, id)`,
     `CREATE TABLE IF NOT EXISTS budget_reservations (
       id ${pk}, task_id INTEGER NOT NULL, grant_nonce TEXT NOT NULL UNIQUE, tokens INTEGER NOT NULL, bytes INTEGER NOT NULL, created_at ${ts} NOT NULL
     )`,

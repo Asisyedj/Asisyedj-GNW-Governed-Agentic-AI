@@ -83,7 +83,7 @@ async function createPostgres(url: string): Promise<Db> {
     connectionString: url,
     max: 10,
     idleTimeoutMillis: 30_000,
-    ssl: /sslmode=require/.test(url) ? { rejectUnauthorized: true } : undefined,
+    ssl: /sslmode=(require|verify-full)/i.test(url) ? { rejectUnauthorized: true } : undefined,
   });
 
   const query = async (sql: string, params: unknown[]) => {
@@ -143,7 +143,13 @@ export async function migrate(db: Db) {
     await db.run(statement);
   }
   // Additive compatibility for databases created before Phase 3.
-  try { await db.run("ALTER TABLE capability_leases ADD COLUMN interlock_generation INTEGER NOT NULL DEFAULT 0"); } catch {}
+  try {
+    await db.run("ALTER TABLE capability_leases ADD COLUMN interlock_generation INTEGER NOT NULL DEFAULT 0");
+  } catch (error) {
+    const code = (error as { code?: string } | null)?.code;
+    const message = error instanceof Error ? error.message : String(error);
+    if (code !== "42701" && !/duplicate column name|already exists/i.test(message)) throw error;
+  }
   await db.run("INSERT INTO system_controls (key, value, updated_by, updated_at) VALUES ('interlock_generation', '0', NULL, 0) ON CONFLICT (key) DO NOTHING");
 }
 

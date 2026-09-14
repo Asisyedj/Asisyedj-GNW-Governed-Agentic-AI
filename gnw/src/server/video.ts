@@ -6,7 +6,7 @@ import { authorizeArtifactStorage, governanceService, rehydrateGrant, sha256 } f
 import { notifyOwner } from "./notify.js";
 import * as repo from "./repo.js";
 import { storagePut } from "./storage.js";
-import { assertFinalInterlock, executeExternal, ExecutionDenied } from "./execution.js";
+import { assertFinalInterlock, executeExternal, executeFencedExternal, ExecutionDenied } from "./execution.js";
 import { governedFetch } from "./security.js";
 import type { SessionUser } from "./auth.js";
 
@@ -78,7 +78,19 @@ export async function submitApprovedVideoJob(db: Db, user: SessionUser, approval
 
   try {
     await repo.updateVideoJob(db, jobId, { status: "queued", startedAt: Date.now() });
-    const submission = await executeExternal({ db, env, taskId: approval.task_id, actorUserId: user.id, eventType: "provider_submission", actionDigest: decision.actionDigest, destination: env.videoProviderUrl || undefined, capabilityLease: decision.capabilityLease!, capability: "video.provider_job", effect: () => submitToProvider({ jobId, brief: job.brief ?? "", script: job.script ?? "", storyboard: job.storyboard ?? "" }, env) });
+    const tenant = user.tenantKey;
+    const effectKey = `video-provider:${tenant}:${jobId}`;
+    const idempotencyKey = sha256(`GNW-PROVIDER-IDEMPOTENCY-V1|${tenant}|${jobId}|${decision.actionDigest}`);
+    const fenced = await executeFencedExternal({ db, env, taskId: approval.task_id, actorUserId: user.id, tenant, eventType: "provider_submission", actionDigest: decision.actionDigest, capabilityLease: decision.capabilityLease!, capability: "video.provider_job", provider: env.videoProvider, effectKey, idempotencyKey, effect: (fenceToken, providerIdempotencyKey, generation) => submitToProvider({ jobId, brief: job.brief ?? "", script: job.script ?? "", storyboard: job.storyboard ?? "" }, env, { fenceToken, idempotencyKey: providerIdempotencyKey, generation }) });
+    if (fenced.status === "PENDING_RECONCILIATION") {
+      await repo.updateVideoJob(db, jobId, { status: "queued", errorMessage: "provider_submission_pending_reconciliation" });
+      return { ok: false, status: "DENY", reason: "provider_submission_pending_reconciliation" };
+    }
+    const submission = fenced.result ?? (fenced.providerEffectId ? { providerJobId: fenced.providerEffectId, provider: env.videoProvider, completesImmediately: false } : null);
+    if (!submission) {
+      await repo.updateVideoJob(db, jobId, { status: "queued", errorMessage: "provider_effect_completed_without_effect_id" });
+      return { ok: false, status: "DENY", reason: "provider_effect_completed_without_effect_id" };
+    }
     await repo.updateVideoJob(db, jobId, { status: "generating", providerJobId: submission.providerJobId, errorMessage: null });
     await repo.createMessage(db, { taskId: approval.task_id, role: "system", agentName: "video_producer", content: `Provider job ${submission.providerJobId} submitted after human approval. Status: generating.` });
     await appendAudit(db, { taskId: approval.task_id, actorUserId: user.id, eventType: "provider_job_submitted", decision: "ALLOW", reason: "approved_submission", payload: { jobId, providerJobId: submission.providerJobId, provider: submission.provider } });
@@ -104,24 +116,27 @@ async function deny(db: Db, user: SessionUser, taskId: number, approvalId: numbe
 
 type Submission = { providerJobId: string; provider: string; completesImmediately: boolean };
 
-async function submitToProvider(job: { jobId: number; brief: string; script: string; storyboard: string }, env: Env): Promise<Submission> {
+async function submitToProvider(job: { jobId: number; brief: string; script: string; storyboard: string }, env: Env, fence: { fenceToken: string; idempotencyKey: string; generation: number }): Promise<{ result: Submission; providerEffectId?: string | null; responseDigest?: string | null }> {
   if (!env.videoProviderUrl) {
     // Stub provider: the governed lifecycle runs end to end and no external
     // generation is claimed. Swap in a real endpoint with VIDEO_PROVIDER_URL.
-    return { providerJobId: `stub-${randomUUID()}`, provider: "stub", completesImmediately: true };
+    const providerJobId = `stub-${randomUUID()}`;
+    return { result: { providerJobId, provider: "stub", completesImmediately: true }, providerEffectId: providerJobId, responseDigest: sha256(JSON.stringify({ providerJobId, fence: fence.fenceToken, idempotencyKey: fence.idempotencyKey })) };
   }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 30_000);
   try {
     const response = await governedFetch(env.videoProviderUrl, {
       method: "POST",
-      headers: { "content-type": "application/json", ...(env.videoProviderApiKey ? { authorization: `Bearer ${env.videoProviderApiKey}` } : {}) },
+      headers: { "content-type": "application/json", "idempotency-key": fence.idempotencyKey, "x-gnw-fence-generation": String(fence.generation), "x-gnw-fence-token": fence.fenceToken, ...(env.videoProviderApiKey ? { authorization: `Bearer ${env.videoProviderApiKey}` } : {}) },
       body: JSON.stringify({ reference: `gnw-video-${job.jobId}`, brief: job.brief, script: job.script, storyboard: job.storyboard }),
       redirect: "manual",
       signal: controller.signal,
       __allowedHosts: env.allowedEgressHosts,
     } as RequestInit & { __allowedHosts: readonly string[] }, env.maxProviderResponseBytes);
     if (!response.ok) throw new Error(`provider_http_${response.status}: ${(await response.text()).slice(0, 300)}`);
+    if (env.videoProviderIdempotencyRequired && response.headers.get("x-gnw-idempotency-key") !== fence.idempotencyKey) throw new Error("provider_idempotency_contract_not_confirmed");
+    if (env.videoProviderFencingRequired && response.headers.get("x-gnw-fence-token") !== fence.fenceToken) throw new Error("provider_fence_contract_not_confirmed");
     const contentLength = Number(response.headers.get("content-length") ?? 0);
     if (contentLength > env.maxProviderResponseBytes) throw new Error("provider_response_too_large");
     const raw = await response.text();
@@ -129,7 +144,8 @@ async function submitToProvider(job: { jobId: number; brief: string; script: str
     const payload = JSON.parse(raw) as { id?: string; job_id?: string; status?: string };
     const providerJobId = payload.id ?? payload.job_id;
     if (!providerJobId) throw new Error("provider_response_missing_job_id");
-    return { providerJobId, provider: env.videoProvider, completesImmediately: payload.status === "completed" };
+    const responseDigest = sha256(raw);
+    return { result: { providerJobId, provider: env.videoProvider, completesImmediately: payload.status === "completed" }, providerEffectId: providerJobId, responseDigest };
   } finally {
     clearTimeout(timer);
   }

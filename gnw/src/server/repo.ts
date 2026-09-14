@@ -277,7 +277,9 @@ export async function setInterlock(db: Db, values: Partial<Interlock>, updatedBy
       await tx.run("INSERT INTO system_controls (key, value, updated_by, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_by = excluded.updated_by, updated_at = excluded.updated_at", [key, String(value), updatedBy, stamp]);
     }
     if (changed) {
-      const current = await tx.get<{ value: string }>("SELECT value FROM system_controls WHERE key = 'interlock_generation'");
+      const current = await tx.get<{ value: string }>(tx.dialect === "postgres"
+        ? "SELECT value FROM system_controls WHERE key = 'interlock_generation' FOR UPDATE"
+        : "SELECT value FROM system_controls WHERE key = 'interlock_generation'");
       const next = Number(current?.value ?? 0) + 1;
       await tx.run("INSERT INTO system_controls (key, value, updated_by, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_by = excluded.updated_by, updated_at = excluded.updated_at", ["interlock_generation", String(next), updatedBy, now()]);
     }
@@ -290,6 +292,62 @@ export async function getTaskExecutionContext(db: Db, taskId: number) {
     "SELECT t.id AS taskId, w.tenant_key AS tenant FROM tasks t INNER JOIN workspaces w ON w.id = t.workspace_id WHERE t.id = ?",
     [taskId],
   );
+}
+
+export type EffectFenceRow = {
+  effect_key: string; task_id: number; tenant: string; capability: string; action_digest: string;
+  interlock_generation: number; fence_token: string; idempotency_key: string; provider: string;
+  state: "READY" | "IN_FLIGHT" | "COMPLETED" | "PENDING_RECONCILIATION" | "FAILED";
+  provider_effect_id: string | null; response_digest: string | null; attempt_count: number;
+  created_at: number; updated_at: number;
+};
+
+export async function getEffectFence(db: Db, effectKey: string) {
+  return db.get<EffectFenceRow>("SELECT * FROM effect_fences WHERE effect_key = ?", [effectKey]);
+}
+
+export async function createEffectFence(db: Db, input: {
+  effectKey: string; taskId: number; tenant: string; capability: string; actionDigest: string;
+  interlockGeneration: number; fenceToken: string; idempotencyKey: string; provider: string;
+}) {
+  try {
+    await db.insert(
+      "INSERT INTO effect_fences (effect_key, task_id, tenant, capability, action_digest, interlock_generation, fence_token, idempotency_key, provider, state, attempt_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'READY', 0, ?, ?)",
+      [input.effectKey, input.taskId, input.tenant, input.capability, input.actionDigest, input.interlockGeneration, input.fenceToken, input.idempotencyKey, input.provider, now(), now()],
+    );
+  } catch (error) {
+    if (!(error instanceof UniqueViolation)) throw error;
+  }
+  return getEffectFence(db, input.effectKey);
+}
+
+export async function claimEffectFence(db: Db, effectKey: string, generation: number) {
+  if (db.dialect === "sqlite") {
+    const result = await db.run(
+      "UPDATE effect_fences SET state = 'IN_FLIGHT', attempt_count = attempt_count + 1, updated_at = ? WHERE effect_key = ? AND state = 'READY' AND interlock_generation = ? AND ? = CAST((SELECT value FROM system_controls WHERE key = 'interlock_generation') AS INTEGER)",
+      [now(), effectKey, generation, generation],
+    );
+    return result.changes > 0;
+  }
+  return db.transaction(async tx => {
+    const control = await tx.get<{ value: string }>(tx.dialect === "postgres"
+      ? "SELECT value FROM system_controls WHERE key = 'interlock_generation' FOR UPDATE"
+      : "SELECT value FROM system_controls WHERE key = 'interlock_generation'");
+    if (Number(control?.value ?? 0) !== generation) return false;
+    const result = await tx.run(
+      "UPDATE effect_fences SET state = 'IN_FLIGHT', attempt_count = attempt_count + 1, updated_at = ? WHERE effect_key = ? AND state = 'READY' AND interlock_generation = ?",
+      [now(), effectKey, generation],
+    );
+    return result.changes > 0;
+  });
+}
+
+export async function completeEffectFence(db: Db, effectKey: string, providerEffectId: string | null, responseDigest: string | null) {
+  await db.run("UPDATE effect_fences SET state = 'COMPLETED', provider_effect_id = ?, response_digest = ?, updated_at = ? WHERE effect_key = ? AND state = 'IN_FLIGHT'", [providerEffectId, responseDigest, now(), effectKey]);
+}
+
+export async function reconcileEffectFence(db: Db, effectKey: string, providerEffectId: string | null, responseDigest: string | null) {
+  await db.run("UPDATE effect_fences SET state = 'PENDING_RECONCILIATION', provider_effect_id = COALESCE(?, provider_effect_id), response_digest = COALESCE(?, response_digest), updated_at = ? WHERE effect_key = ? AND state = 'IN_FLIGHT'", [providerEffectId, responseDigest, now(), effectKey]);
 }
 
 export async function reserveBudget(db: Db, taskId: number, grantNonce: string, tokens: number, bytes: number) {

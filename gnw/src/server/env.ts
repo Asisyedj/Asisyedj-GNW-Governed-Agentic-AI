@@ -40,6 +40,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env) {
     port: int(source.PORT, 8787),
     sessionSecret: source.SESSION_SECRET ?? (isProduction ? "" : "dev-insecure-secret-do-not-use-in-production"),
     databaseUrl: source.DATABASE_URL ?? "file:./data/gnw.db",
+    postgresSslRequired: bool(source.GNW_POSTGRES_SSL_REQUIRED, isProduction),
     ownerEmail: (source.OWNER_EMAIL ?? "").trim().toLowerCase(),
     ownerPassword: source.OWNER_PASSWORD ?? "",
     allowSelfRegistration: bool(source.ALLOW_SELF_REGISTRATION, false),
@@ -60,6 +61,8 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env) {
     videoProvider: source.VIDEO_PROVIDER ?? "stub",
     videoProviderUrl: source.VIDEO_PROVIDER_URL ?? "",
     videoProviderApiKey: source.VIDEO_PROVIDER_API_KEY ?? "",
+    videoProviderIdempotencyRequired: bool(source.VIDEO_PROVIDER_IDEMPOTENCY_REQUIRED, isProduction),
+    videoProviderFencingRequired: bool(source.VIDEO_PROVIDER_FENCING_REQUIRED, isProduction),
     notifyWebhookUrl: source.NOTIFY_WEBHOOK_URL ?? "",
     // "none" is required only when the client is served from a different origin
     // than the API; it forces Secure and therefore HTTPS.
@@ -124,6 +127,7 @@ export function assertProductionEnvironment(env: Env = ENV) {
   if (!env.sessionSecret || env.sessionSecret.length < 32) failures.push("SESSION_SECRET must be set to at least 32 characters");
   if (!env.databaseUrl) failures.push("DATABASE_URL must be set");
   if (env.databaseUrl.startsWith("file:")) failures.push("SQLite is not an accepted production database; set a postgres:// DATABASE_URL");
+  if ((env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://")) && env.postgresSslRequired && !/sslmode=verify-full/i.test(env.databaseUrl)) failures.push("Production PostgreSQL requires sslmode=verify-full");
   if (!env.ownerEmail || !env.ownerPassword) failures.push("OWNER_EMAIL and OWNER_PASSWORD are required in production bootstrap");
   if (env.allowSelfRegistration) failures.push("ALLOW_SELF_REGISTRATION must be false in production");
   if (env.storageDriver !== "s3") failures.push("Production requires durable S3-compatible object storage; set STORAGE_DRIVER=s3");
@@ -134,6 +138,8 @@ export function assertProductionEnvironment(env: Env = ENV) {
   if (env.capabilityLeaseTtlMs <= 0 || env.capabilityLeaseTtlMs > env.grantTtlMs) failures.push("GNW_CAPABILITY_LEASE_TTL_MS must be positive and <= GRANT_TTL_MS");
   if (env.llmApiKey && env.allowedEgressHosts.length === 0) failures.push("Configured LLM requires GNW_ALLOWED_EGRESS_HOSTS");
   if (env.videoProviderUrl && env.allowedEgressHosts.length === 0) failures.push("Configured provider requires GNW_ALLOWED_EGRESS_HOSTS");
+  if (env.videoProviderUrl && !env.videoProviderIdempotencyRequired) failures.push("Configured provider requires VIDEO_PROVIDER_IDEMPOTENCY_REQUIRED=true in production");
+  if (env.videoProviderUrl && !env.videoProviderFencingRequired) failures.push("Configured provider requires VIDEO_PROVIDER_FENCING_REQUIRED=true in production");
   if (env.notifyWebhookUrl && env.allowedEgressHosts.length === 0) failures.push("Configured notification webhook requires GNW_ALLOWED_EGRESS_HOSTS");
   if (env.s3.endpoint && env.allowedEgressHosts.length === 0) failures.push("Configured S3 endpoint requires GNW_ALLOWED_EGRESS_HOSTS");
   if (env.allowedEgressHosts.some(host => host === "*" || host.startsWith("*.*"))) failures.push("Wildcard egress host policy is not permitted");
