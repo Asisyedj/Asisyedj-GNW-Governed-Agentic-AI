@@ -1,0 +1,42 @@
+name: GNW Phase 4 Rebased Validation
+
+on:
+  push:
+    branches:
+      - remediation/phase4-rebased-current-2026-09-14
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gnw
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: gnw/package-lock.json
+      - name: Clean install
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Full tests
+        run: npm test
+      - name: Phase 4 targeted tests
+        run: npx vitest run tests/phase4-effect-fence.test.ts tests/phase4-provider-contract.test.ts
+      - name: Build
+        run: npm run build
+      - name: Dependency audit
+        run: npm audit --omit=dev
+      - name: 100-case evidence gate
+        run: node scripts/validate-100-evidence.mjs
+      - name: Release evidence gate
+        run: node scripts/validate-release-evidence.mjs
