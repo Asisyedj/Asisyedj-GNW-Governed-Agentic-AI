@@ -1,0 +1,105 @@
+name: GNW Phase 3 Security Boundary Validation
+
+on:
+  push:
+    branches:
+      - remediation/phase3-executor-fencing-skill-bypass-2026-09-14
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phase3-security:
+    name: Executor, fencing and skill-bypass validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: true
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+          cache-dependency-path: gnw/package-lock.json
+
+      - name: Record source identity
+        run: |
+          set -euo pipefail
+          mkdir -p phase3-evidence
+          {
+            echo "repository=$GITHUB_REPOSITORY"
+            echo "ref=$GITHUB_REF"
+            echo "commit=$(git rev-parse HEAD)"
+            echo "tree=$(git rev-parse HEAD^{tree})"
+            echo "node=$(node --version)"
+            echo "npm=$(npm --version)"
+            echo "package_lock_sha256=$(sha256sum gnw/package-lock.json | awk '{print $1}')"
+          } | tee phase3-evidence/source-identity.txt
+
+      - name: Clean install
+        run: |
+          set -euo pipefail
+          rm -rf gnw/node_modules
+          cd gnw
+          npm ci 2>&1 | tee ../phase3-evidence/npm-ci.log
+
+      - name: Typecheck
+        run: |
+          set -euo pipefail
+          cd gnw
+          npm run typecheck 2>&1 | tee ../phase3-evidence/typecheck.log
+
+      - name: Phase 3 adversarial tests
+        run: |
+          set -euo pipefail
+          cd gnw
+          npx vitest run tests/phase3-security-boundaries.test.ts tests/executor-auth.test.ts tests/skills-engine.test.ts tests/governed-execution.test.ts 2>&1 | tee ../phase3-evidence/phase3-targeted.log
+
+      - name: Full test suite
+        run: |
+          set -euo pipefail
+          cd gnw
+          npm test 2>&1 | tee ../phase3-evidence/full-tests.log
+
+      - name: Production build and executor bundle
+        run: |
+          set -euo pipefail
+          cd gnw
+          npm run build 2>&1 | tee ../phase3-evidence/build.log
+          npx esbuild src/executor/index.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=/tmp/gnw-phase3-executor.js 2>&1 | tee ../phase3-evidence/executor-bundle.log
+          sha256sum /tmp/gnw-phase3-executor.js | tee ../phase3-evidence/executor-bundle.sha256
+
+      - name: Skill sink bypass scan
+        run: |
+          set -euo pipefail
+          if rg -n "executeExternal|governedFetch|fetch\\(|https?\\.request|child_process|spawn\\(|exec\\(|storagePut|writeFile" gnw/src/server/skills > phase3-evidence/skill-sink-scan.log; then
+            echo 'FAIL: direct external sink pattern found in governed skills' | tee phase3-evidence/skill-sink-scan.verdict
+            exit 1
+          else
+            echo 'PASS: no direct external sink pattern found in governed skills' | tee phase3-evidence/skill-sink-scan.verdict
+          fi
+
+      - name: Evidence hashes
+        if: always()
+        run: |
+          set -euo pipefail
+          git status --porcelain | tee phase3-evidence/post-status.txt
+          sha256sum phase3-evidence/* > phase3-evidence/evidence-sha256.txt
+
+      - name: Upload Phase 3 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gnw-phase3-security-evidence-${{ github.run_id }}
+          path: phase3-evidence
+          if-no-files-found: error
+          retention-days: 30
