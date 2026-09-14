@@ -1,0 +1,9 @@
+=== node ===
+v22.13.0
+=== npm ===
+10.9.2
+=== typecheck ===
+
+> gnw-governed-agent@4.0.0 typecheck
+> tsc --noEmit
+

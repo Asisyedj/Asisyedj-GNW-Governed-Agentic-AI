@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gnw.local/schemas/council/judge-verdict.v1.json",
+  "title": "GNW Judge Verdict v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["taskId", "role", "schemaVersion", "policyVersion", "recommendation", "confidence", "claims", "risks", "requiredControls", "missingEvidence", "dissentSummary"],
+  "properties": {
+    "taskId": { "type": "string", "format": "uuid" },
+    "role": { "const": "judge" },
+    "schemaVersion": { "const": "1.0.0" },
+    "policyVersion": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "recommendation": { "enum": ["allow_limited_execution", "require_human_approval", "request_more_evidence", "deny"] },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "claims": { "type": "array", "maxItems": 100, "items": { "type": "object", "additionalProperties": false, "required": ["claim", "evidenceIds"], "properties": { "claim": { "type": "string", "minLength": 1, "maxLength": 1000 }, "evidenceIds": { "type": "array", "maxItems": 50, "items": { "type": "string", "minLength": 1, "maxLength": 160 } } } } },
+    "risks": { "type": "array", "maxItems": 100, "items": { "type": "object", "additionalProperties": false, "required": ["id", "severity", "category", "reason"], "properties": { "id": { "type": "string", "minLength": 1, "maxLength": 80 }, "severity": { "enum": ["low", "medium", "high", "critical"] }, "category": { "type": "string", "minLength": 1, "maxLength": 120 }, "reason": { "type": "string", "minLength": 1, "maxLength": 1000 } } } },
+    "requiredControls": { "type": "array", "maxItems": 50, "items": { "type": "string", "minLength": 1, "maxLength": 160 } },
+    "missingEvidence": { "type": "array", "maxItems": 50, "items": { "type": "string", "minLength": 1, "maxLength": 160 } },
+    "dissentSummary": { "type": "string", "maxLength": 2000 }
+  }
+}

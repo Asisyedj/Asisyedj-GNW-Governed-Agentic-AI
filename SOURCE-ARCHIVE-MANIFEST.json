@@ -1,0 +1,172 @@
+{
+  "schema": "GNW.SourceArchiveManifest.v1",
+  "generated_at_utc": "2026-09-13T14:10:58.762867+00:00",
+  "source_archive": {
+    "path": "/home/ubuntu/gnw-production-remediation-2026-09-13/source/GNW-AUDITED-PROTECTED.zip",
+    "sha256": "446cb463dd07092be870a1a3456c50c1efc6d3414a088480af89e74c470fa6d1",
+    "regular_file_count": 217,
+    "zip_entry_count": 635
+  },
+  "verification_boundary": "Exact user-supplied archive; presence and digest inventory only. No runtime, provider, deployment, certification, or production claim.",
+  "inventory_reconciliation": {
+    "current_exact_archive_regular_files": 217,
+    "prior_claim_224_files": "Not reproduced against this exact archive",
+    "resolution": "The exact supplied archive contains 217 regular files. Any higher count belongs to a modified remediation workspace or a different counting method and must not be attributed to the frozen source archive."
+  },
+  "packages": [
+    {
+      "id": "OC-001",
+      "name": "client-manager-pro",
+      "root": "skills/client-manager-pro",
+      "skill_doc": {
+        "path": "skills/client-manager-pro/SKILL.md",
+        "exists": true,
+        "sha256": "d6849c9a714345a616b73e2e93995f3e237a36737f29c033f01b6bd897ba3d73"
+      },
+      "implementation": {
+        "path": "skills/client-manager-pro/openclaw/oc-001-client-manager-pro/client_manager.py",
+        "exists": true,
+        "sha256": "6207cc6a68a39b3fa5d6073fe4ba19748050a652d6625f9f795544fe83ffc922"
+      },
+      "package_tests_in_source_archive": [],
+      "source_acceptance": {
+        "skill_doc_exists": true,
+        "implementation_exists": true,
+        "package_test_exists": false,
+        "behavior_verified": false
+      }
+    },
+    {
+      "id": "OC-048",
+      "name": "organization-memory-architect",
+      "root": "skills/organization-memory-architect",
+      "skill_doc": {
+        "path": "skills/organization-memory-architect/SKILL.md",
+        "exists": true,
+        "sha256": "dfaf3ea3abc5f30db19d7b30c0a008bc691736e3d78be2f4afa802266ed1ed6b"
+      },
+      "implementation": {
+        "path": "skills/organization-memory-architect/openclaw/oc-048-organization-memory-architect/memory_architect.py",
+        "exists": true,
+        "sha256": "b5b123432e9a75d133d5ff1218d1c6d21ec0ff8367ec85e6c36c715feb32e1ce"
+      },
+      "package_tests_in_source_archive": [],
+      "source_acceptance": {
+        "skill_doc_exists": true,
+        "implementation_exists": true,
+        "package_test_exists": false,
+        "behavior_verified": false
+      }
+    },
+    {
+      "id": "OC-049",
+      "name": "federated-learner",
+      "root": "skills/federated-learner",
+      "skill_doc": {
+        "path": "skills/federated-learner/SKILL.md",
+        "exists": true,
+        "sha256": "a246a1691a6d1fa4e039855dae7d0ee1c40a34cc28e9dde5af99c3e1111893a8"
+      },
+      "implementation": {
+        "path": "skills/federated-learner/openclaw/oc-049-cross-instance-federated-learner/federated_learner.py",
+        "exists": true,
+        "sha256": "527b48670a018d783f9753a4739e5bd4b312670cdd3fcf9e965b65618c43d7e4"
+      },
+      "package_tests_in_source_archive": [],
+      "source_acceptance": {
+        "skill_doc_exists": true,
+        "implementation_exists": true,
+        "package_test_exists": false,
+        "behavior_verified": false
+      }
+    },
+    {
+      "id": "OC-050",
+      "name": "research-orchestrator",
+      "root": "skills/research-orchestrator",
+      "skill_doc": {
+        "path": "skills/research-orchestrator/SKILL.md",
+        "exists": true,
+        "sha256": "852a2fe8aa0be2789a3b7c86a95c81efa5b52cbc15ea038a1bc9bf023779e78a"
+      },
+      "implementation": {
+        "path": "skills/research-orchestrator/openclaw/oc-050-scientific-research-orchestrator/research_orchestrator.py",
+        "exists": true,
+        "sha256": "e473dd32c93164f26da5206d381c0e0d0e89e0b2a25eab1ab49d7326f10d4d11"
+      },
+      "package_tests_in_source_archive": [],
+      "source_acceptance": {
+        "skill_doc_exists": true,
+        "implementation_exists": true,
+        "package_test_exists": false,
+        "behavior_verified": false
+      }
+    },
+    {
+      "id": "UNNUMBERED-LEAD-GEN-HUNTER",
+      "name": "lead-gen-hunter",
+      "root": "skills/lead-gen-hunter",
+      "skill_doc": {
+        "path": "skills/lead-gen-hunter/SKILL.md",
+        "exists": true,
+        "sha256": "bc6c2caf23adc7291fa76f5d18c9ccdbbd2004829a6843d4085ddfb8ff22a092"
+      },
+      "implementation": {
+        "path": "skills/lead-gen-hunter/lead-gen-hunter/lead_gen_hunter.py",
+        "exists": true,
+        "sha256": "a27292cf900c96b8828e4768c88a68fb484791608fe816afff926d33bdca3e93"
+      },
+      "package_tests_in_source_archive": [],
+      "source_acceptance": {
+        "skill_doc_exists": true,
+        "implementation_exists": true,
+        "package_test_exists": false,
+        "behavior_verified": false
+      }
+    },
+    {
+      "id": "UNNUMBERED-PROMPT-ENGINEERING-MASTERY",
+      "name": "prompt-engineering-mastery",
+      "root": "skills/prompt-engineering-mastery",
+      "skill_doc": {
+        "path": "skills/prompt-engineering-mastery/SKILL.md",
+        "exists": true,
+        "sha256": "995765da20ef446076355ea33ab3f2f2d3a228799d8f12aebf6c2febc6f65ce7"
+      },
+      "implementation": {
+        "path": "skills/prompt-engineering-mastery/prompt_engineering/PE_MASTER/prompt_mastery.py",
+        "exists": true,
+        "sha256": "01664074e4876a4dc6702b85616049312449ccf758837f4abeffd1d280fa9519"
+      },
+      "package_tests_in_source_archive": [],
+      "source_acceptance": {
+        "skill_doc_exists": true,
+        "implementation_exists": true,
+        "package_test_exists": false,
+        "behavior_verified": false
+      }
+    },
+    {
+      "id": "UNNUMBERED-PROMPT-OPTIMIZER",
+      "name": "prompt-optimizer",
+      "root": "skills/prompt-optimizer",
+      "skill_doc": {
+        "path": "skills/prompt-optimizer/SKILL.md",
+        "exists": true,
+        "sha256": "28624aec51c691e4748433d143560f86e8844b65eb42cf74c0a1586e5dce865e"
+      },
+      "implementation": {
+        "path": "skills/prompt-optimizer/prompt_optimization/model_optimizer.py",
+        "exists": true,
+        "sha256": "3dd2162d7f040bfe4ad719fbfe49eb91049dfb4cb9a944d453a7010255841d74"
+      },
+      "package_tests_in_source_archive": [],
+      "source_acceptance": {
+        "skill_doc_exists": true,
+        "implementation_exists": true,
+        "package_test_exists": false,
+        "behavior_verified": false
+      }
+    }
+  ]
+}

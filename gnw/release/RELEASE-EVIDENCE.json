@@ -1,0 +1,30 @@
+{
+  "schema": "GNW.ReleaseEvidence.v1",
+  "candidate": "gnw-governed-agent-4.0.0-remediation",
+  "source_archive_sha256": "446cb463dd07092be870a1a3456c50c1efc6d3414a088480af89e74c470fa6d1",
+  "status": "BLOCKED",
+  "gates": {
+    "local_clean_install": "PASS",
+    "local_typecheck": "PASS",
+    "local_tests": "PASS",
+    "local_build": "PASS",
+    "dependency_audit": "PASS",
+    "container_build": "BLOCKED",
+    "tls_postgres_multi_instance": "BLOCKED",
+    "ssrf_dns_rebinding": "BLOCKED",
+    "distributed_kill_switch": "BLOCKED",
+    "backup_restore_anti_resurrection": "BLOCKED",
+    "secret_rotation": "BLOCKED",
+    "supply_chain_signing": "BLOCKED",
+    "irs_100_evidence": "BLOCKED",
+    "independent_review": "BLOCKED",
+    "accredited_certification": "BLOCKED"
+  },
+  "review": {
+    "reviewer": "UNASSIGNED",
+    "organization": "UNASSIGNED",
+    "timestamp": "",
+    "signature": "MISSING"
+  },
+  "note": "This manifest is fail-closed. Local passing checks do not authorize production or certification."
+}

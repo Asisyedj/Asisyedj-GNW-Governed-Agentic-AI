@@ -1,0 +1,13 @@
+
+> gnw-governed-agent@4.0.0 test:council-python
+> python3 -m unittest discover -s tools/council_reference -p 'test_*.py' -v
+
+test_evidence_digest_and_redaction (test_reference_governed_council.CouncilReferenceTests.test_evidence_digest_and_redaction) ... ok
+test_happy_path_reaches_shadow_only_terminal_state (test_reference_governed_council.CouncilReferenceTests.test_happy_path_reaches_shadow_only_terminal_state) ... ok
+test_invalid_transition_fails_closed (test_reference_governed_council.CouncilReferenceTests.test_invalid_transition_fails_closed) ... ok
+test_policy_is_always_non_authorizing (test_reference_governed_council.CouncilReferenceTests.test_policy_is_always_non_authorizing) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.000s
+
+OK

@@ -1,0 +1,10 @@
+Implemented:
+- complete audit retrieval without the previous proof-generation cap
+- GNW.AuditProofBundle.v2 with explicit completeness, domain-separated Merkle nodes, optional Ed25519 signatures, and offline verification
+- GNW.ActionEnvelope.v1 with canonical parameters/action digest, provenance, approval binding, signing and verification
+- capability audience binding at the external-effect boundary
+- MCP resource/audience, scope, redirect, protected-metadata and S256 PKCE validators
+- governed-code, restricted-research and provider-submission controlled pilot definitions with measurable pass criteria
+
+Release caveat:
+This is a hardened staging candidate, not production certification. Real OIDC, hostile-code sandbox proof, PostgreSQL/RLS and multi-instance evidence, full MCP transport integration, backup/restore anti-resurrection, key rotation, signed supply-chain provenance and independent release review remain required.

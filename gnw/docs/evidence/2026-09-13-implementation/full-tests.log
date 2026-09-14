@@ -1,0 +1,49 @@
+
+> gnw-governed-agent@4.0.0 test
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.0 [39m[90m/home/ubuntu/projects/gnw-67b09b49/gnw-work/gnw[39m
+
+ [32m✓[39m tests/council.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 72[2mms[22m[39m
+ [32m✓[39m tests/world-class-tools.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 170[2mms[22m[39m
+ [32m✓[39m tests/audit.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m tests/action-envelope-proof.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m tests/governed-execution.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 311[2mms[22m[39m
+ [32m✓[39m tests/skills-engine.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/quorum-invariants-speculative.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 347[2mms[22m[39m
+ [32m✓[39m tests/governance.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/capability-v4.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/secrets.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/egress-interlock.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/security-v3.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+[90mstdout[2m | tests/api.test.ts[2m > [22m[2mvideo workflow, approvals and replay protection[2m > [22m[2mproduces brief, script and storyboard and queues provider submission
+[22m[39m{"level":"info","event":"notification","title":"GNW approval required","taskId":4,"delivered":false}
+
+ [32m✓[39m tests/mcp-memory-security.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/pilots.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/sandbox-adapter.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+[90mstdout[2m | tests/api.test.ts[2m > [22m[2mvideo workflow, approvals and replay protection[2m > [22m[2msubmits once after approval and refuses the replay
+[22m[39m{"level":"info","event":"notification","title":"GNW video job completed","taskId":4,"delivered":false}
+
+[90mstdout[2m | tests/api.test.ts[2m > [22m[2mvideo workflow, approvals and replay protection[2m > [22m[2mrefuses a denied approval and stops its video job
+[22m[39m{"level":"info","event":"notification","title":"GNW approval required","taskId":5,"delivered":false}
+
+[90mstdout[2m | tests/api.test.ts[2m > [22m[2mvideo workflow, approvals and replay protection[2m > [22m[2mrefuses an expired approval
+[22m[39m{"level":"info","event":"notification","title":"GNW approval required","taskId":6,"delivered":false}
+
+[90mstdout[2m | tests/api.test.ts[2m > [22m[2mseparation of duties[2m > [22m[2mrefuses self-approval by a non-admin requester
+[22m[39m{"level":"info","event":"notification","title":"GNW approval required","taskId":7,"delivered":false}
+
+ [32m✓[39m tests/api.test.ts [2m([22m[2m24 tests[22m[2m)[22m[33m 853[2mms[22m[39m
+   [32m✓[39m authentication and tenancy [2m(5)[22m
+     [33m[2m✓[22m[39m throttles repeated failed logins[33m 449[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m16 passed[39m[22m[90m (16)[39m
+[2m      Tests [22m [1m[32m111 passed[39m[22m[90m (111)[39m
+[2m   Start at [22m 23:32:48
+[2m   Duration [22m 1.70s[2m (tests 37%, transform 33%, import 27%, worker 3%)[22m
+
+[2m    Isolate [22m [33m16 workers spawned[39m[2m · ~162ms startup each (spawn + environment, per file)[22m
+[2m            [22m [2mat least ~357ms faster with [22m[33misolate: false[39m[2m — reuses workers across files instead of one per file[22m
+

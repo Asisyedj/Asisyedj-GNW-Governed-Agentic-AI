@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gnw.local/schemas/council/policy-decision.v1.json",
+  "title": "GNW Shadow Policy Decision v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["taskId", "schemaVersion", "hypotheticalOutcome", "deterministicRuleIds", "executionAuthorized"],
+  "properties": {
+    "taskId": { "type": "string", "format": "uuid" },
+    "schemaVersion": { "const": "1.0.0" },
+    "hypotheticalOutcome": { "enum": ["allow_limited_execution", "require_human_approval", "request_more_evidence", "deny"] },
+    "deterministicRuleIds": { "type": "array", "minItems": 1, "maxItems": 50, "items": { "type": "string", "minLength": 1, "maxLength": 160 } },
+    "executionAuthorized": { "const": false }
+  }
+}

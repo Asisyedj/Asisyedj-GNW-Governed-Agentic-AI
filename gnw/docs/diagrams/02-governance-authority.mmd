@@ -1,0 +1,13 @@
+flowchart LR
+  ID[Trusted Identity] --> TEN[Tenant]
+  TEN --> ROLE[Role]
+  ROLE --> PURPOSE[Purpose]
+  PURPOSE --> CLASS[Classification]
+  CLASS --> AUTH[Governance Authority]
+  AUTH --> GRANT[Signed Grant]
+  GRANT --> CRYPTO[Signature / Issuer / Binding Checks]
+  CRYPTO --> APPROVAL[Approval Validation]
+  APPROVAL --> PEP[PEP]
+  PEP --> PERM[Tool + Model Permissions]
+  PERM --> SAFETY[Budget + Safety]
+  SAFETY --> EXEC[Governed Gateway]

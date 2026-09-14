@@ -1,0 +1,13 @@
+flowchart TB
+  ORCH[Orchestrator - Untrusted Planner] --> A1[Research Agent]
+  ORCH --> A2[Analysis Agent]
+  ORCH --> A3[Engineering Agent]
+  ORCH --> A4[QA Agent]
+  A1 --> CTX[Signed Context Envelope]
+  A2 --> CTX
+  A3 --> CTX
+  A4 --> CTX
+  CTX --> GOV[Governance Authority]
+  GOV --> PEP[Mandatory PEP]
+  PEP --> TOOL[Tool Gateway]
+  TOOL -. no direct authority .-> OUT[External Side Effect]

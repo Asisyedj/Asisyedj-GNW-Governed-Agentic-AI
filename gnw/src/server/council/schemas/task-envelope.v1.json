@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gnw.local/schemas/council/task-envelope.v1.json",
+  "title": "GNW Council Task Envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["taskId", "idempotencyKey", "requestedAt", "actor", "action", "policyVersion", "allowedCapabilities", "evidence", "constraints"],
+  "properties": {
+    "taskId": { "type": "string", "format": "uuid" },
+    "idempotencyKey": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "requestedAt": { "type": "string", "format": "date-time" },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "type": { "enum": ["user", "service", "workflow"] }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "target", "environment", "requestedEffect"],
+      "properties": {
+        "type": { "enum": ["command", "python", "deployment", "connector_write", "analysis", "read_only"] },
+        "target": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "environment": { "enum": ["dev", "staging", "production"] },
+        "requestedEffect": { "type": "string", "minLength": 1, "maxLength": 1000 }
+      }
+    },
+    "policyVersion": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "allowedCapabilities": { "type": "array", "maxItems": 32, "items": { "type": "string", "minLength": 1, "maxLength": 160 } },
+    "evidence": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "sha256"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "type": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "uri": { "type": "string", "format": "uri", "maxLength": 1000 }
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxRuntimeSeconds", "maxCostUsd", "networkEgress", "humanApprovalRequired"],
+      "properties": {
+        "maxRuntimeSeconds": { "type": "integer", "minimum": 1, "maximum": 3600 },
+        "maxCostUsd": { "type": "number", "minimum": 0, "maximum": 1000 },
+        "networkEgress": { "enum": ["none", "allowlisted"] },
+        "humanApprovalRequired": { "type": "boolean" }
+      }
+    }
+  }
+}
