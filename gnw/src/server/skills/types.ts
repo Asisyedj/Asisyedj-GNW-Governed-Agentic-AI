@@ -2,6 +2,8 @@ import { z } from "zod";
 import type { CapabilityLease } from "../capability.js";
 import type { SpecialistAgent } from "../../shared/types.js";
 
+export const SKILL_DIGEST_VERSION = "GNW-SKILL-DEFINITION-V1";
+
 /**
  * Kamil AI Cognitive Stage Definition:
  * Observe -> Understand -> Reason -> Plan -> Act -> Verify -> Critique -> Learn
@@ -57,6 +59,8 @@ export interface SkillExecutionContext {
   taskId: number;
   actorUserId: number;
   actionDigest: string;
+  tenant: string;
+  skillDigest: string;
   capabilityLease: CapabilityLease;
   parameters: Record<string, unknown>;
   cognitiveStage: CognitiveStage;

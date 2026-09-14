@@ -7,6 +7,15 @@ import {
   type SkillExecutionResult,
   type SkillMetadata
 } from "./types.js";
+import { SKILL_DIGEST_VERSION } from "./types.js";
+
+export function skillDefinitionDigest(skill: GovernedSkillDefinition): string {
+  return sha256(canonicalize({
+    version: SKILL_DIGEST_VERSION,
+    metadata: skill.metadata,
+    parameterSchema: skill.paramSchema.toString(),
+  }));
+}
 
 export class GovernedSkillRegistry {
   private skills = new Map<string, GovernedSkillDefinition<any, any>>();
@@ -73,6 +82,15 @@ export class GovernedSkillRegistry {
     }
     if (ctx.capabilityLease.taskId !== ctx.taskId) {
       throw new SkillExecutionError("task_id_mismatch", "Lease taskId does not match execution context taskId.");
+    }
+    if (ctx.capabilityLease.actorUserId !== ctx.actorUserId || ctx.capabilityLease.subject !== String(ctx.actorUserId)) {
+      throw new SkillExecutionError("actor_binding", "Lease actor and subject do not match execution context.");
+    }
+    if (ctx.capabilityLease.tenant !== ctx.tenant) {
+      throw new SkillExecutionError("tenant_binding", "Lease tenant does not match execution context.");
+    }
+    if (ctx.skillDigest !== skillDefinitionDigest(skill)) {
+      throw new SkillExecutionError("skill_digest_mismatch", "Skill definition digest does not match the admitted context.");
     }
     if (ctx.capabilityLease.actionDigest !== ctx.actionDigest) {
       throw new SkillExecutionError("action_digest_mismatch", "Lease actionDigest does not match context actionDigest.");

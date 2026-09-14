@@ -55,7 +55,7 @@ export type GovernanceDecision = {
   capabilityLease?: CapabilityLease;
 };
 
-export type Interlock = { killSwitch: boolean; circuitOpen: boolean };
+export type Interlock = { killSwitch: boolean; circuitOpen: boolean; generation?: number };
 
 export class GovernanceError extends Error {
   constructor(public readonly code: string, message = code) {
@@ -184,6 +184,7 @@ export class GovernanceService {
           capability: request.capability ?? request.tool,
           destination: typeof request.providerParameters?.endpoint === "string" ? request.providerParameters.endpoint : null,
           ttlMs: Math.min(this.leaseSigner.ttlMs, Math.max(1, request.expiresAt - now)),
+          interlockGeneration: interlock.generation ?? 0,
           issuer: this.leaseSigner.issuer,
           privateKeyPem: this.leaseSigner.privateKeyPem,
         }, now);
@@ -212,7 +213,7 @@ export class GovernanceService {
 /** In-memory stores for unit tests and local reasoning about the gateway. */
 export class MemoryGovernanceStores implements GovernanceStores {
   private readonly used = new Set<string>();
-  private interlock: Interlock = { killSwitch: false, circuitOpen: false };
+  private interlock: Interlock = { killSwitch: false, circuitOpen: false, generation: 0 };
 
   async claimNonce(kind: string, nonce: string) {
     const key = `${kind}:${nonce}`;
@@ -228,7 +229,7 @@ export class MemoryGovernanceStores implements GovernanceStores {
   }
 
   setInterlock(next: Partial<Interlock>) {
-    this.interlock = { ...this.interlock, ...next };
+    this.interlock = { ...this.interlock, ...next, generation: (this.interlock.generation ?? 0) + 1 };
   }
 }
 

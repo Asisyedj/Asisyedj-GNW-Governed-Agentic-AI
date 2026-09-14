@@ -142,6 +142,9 @@ export async function migrate(db: Db) {
   for (const statement of schemaStatements(db.dialect)) {
     await db.run(statement);
   }
+  // Additive compatibility for databases created before Phase 3.
+  try { await db.run("ALTER TABLE capability_leases ADD COLUMN interlock_generation INTEGER NOT NULL DEFAULT 0"); } catch {}
+  await db.run("INSERT INTO system_controls (key, value, updated_by, updated_at) VALUES ('interlock_generation', '0', NULL, 0) ON CONFLICT (key) DO NOTHING");
 }
 
 let instance: Promise<Db> | null = null;

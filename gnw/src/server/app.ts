@@ -25,6 +25,7 @@ import { exportAuditProofBundle, verifyMerkleProof } from "./merkle.js";
 import { MultiAgentQuorumEngine } from "./quorum.js";
 import { TrajectoryInvariantEngine } from "./invariants.js";
 import { createDefaultSkillRegistry } from "./skills/index.js";
+import { skillDefinitionDigest } from "./skills/registry.js";
 import { CLASSIFICATIONS, SPECIALIST_AGENTS } from "../shared/types.js";
 
 declare global {
@@ -907,7 +908,8 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
       env,
     });
     grant.inputDigest = sha256(canonicalize(parsed.data.parameters));
-    grant.normalizedParameters = { taskId: task.id, skillId: skill.metadata.id, ...parsed.data.parameters };
+    const skillDigest = skillDefinitionDigest(skill);
+    grant.normalizedParameters = { taskId: task.id, skillId: skill.metadata.id, skillDigest, ...parsed.data.parameters };
     if (env.requireSignedGrants) {
       const signed = signGrant(grant as unknown as Record<string, unknown>, env.grantIssuer, env.grantPrivateKeyPem);
       grant.issuer = signed.issuer;
@@ -924,6 +926,8 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
       {
         taskId: task.id,
         actorUserId: req.user!.id,
+        tenant: req.user!.tenantKey,
+        skillDigest,
         actionDigest: decision.actionDigest,
         capabilityLease: decision.capabilityLease,
         parameters: parsed.data.parameters,

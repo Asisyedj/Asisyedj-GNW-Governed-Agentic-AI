@@ -51,7 +51,7 @@ export async function runGovernedCommand(p: {
     capability: "exec.command",
     effect: async () => {
       const result = p.env.executorRequired
-        ? await executeInRemoteExecutor(p.env, { taskId: p.taskId, command: p.command, timeoutMs: 45_000, maxOutputBytes: p.env.maxBudgetBytes })
+        ? await executeInRemoteExecutor(p.env, { taskId: p.taskId, command: p.command, timeoutMs: 45_000, maxOutputBytes: p.env.maxBudgetBytes, authorization: { lease: p.capabilityLease, actionDigest: p.actionDigest, capability: "exec.command", actorUserId: p.user.id, tenant: p.capabilityLease.tenant } })
         : await sandbox.execute(p.command, [], {
             checkInterlock,
             timeoutMs: 45_000,
@@ -111,7 +111,7 @@ export async function runGovernedPython(p: {
     capability: "exec.python",
     effect: async () => {
       const result = p.env.executorRequired
-        ? await executeInRemoteExecutor(p.env, { taskId: p.taskId, command: "python", args: [scriptName], files: [{ path: scriptName, content: p.script }], timeoutMs: 60_000, maxOutputBytes: p.env.maxBudgetBytes })
+        ? await executeInRemoteExecutor(p.env, { taskId: p.taskId, command: "python", args: [scriptName], files: [{ path: scriptName, content: p.script }], timeoutMs: 60_000, maxOutputBytes: p.env.maxBudgetBytes, authorization: { lease: p.capabilityLease, actionDigest: p.actionDigest, capability: "exec.python", actorUserId: p.user.id, tenant: p.capabilityLease.tenant } })
         : await sandbox.execute(`python "${scriptName}"`, [], {
             checkInterlock,
             timeoutMs: 60_000,

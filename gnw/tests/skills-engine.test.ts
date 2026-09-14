@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { createDefaultSkillRegistry, GovernedSkillRegistry } from "../src/server/skills/index.js";
+import { skillDefinitionDigest } from "../src/server/skills/registry.js";
 import { issueCapabilityLease } from "../src/server/capability.js";
 import { loadEnv } from "../src/server/env.js";
 
@@ -47,6 +48,7 @@ describe("GNW Governed Skills Engine & Top 50 Skills Catalog", () => {
     const taskId = 301;
     const actorUserId = 1;
     const actionDigest = "test-action-digest-12345";
+    const skillDigest = skillDefinitionDigest(registry.getSkill("perplexity-deep-researcher")!);
 
     const lease = issueCapabilityLease({
       requestId: "req-skill-test-01",
@@ -54,7 +56,7 @@ describe("GNW Governed Skills Engine & Top 50 Skills Catalog", () => {
       actorUserId,
       actionDigest,
       capability: "browser.visual",
-      subject: "researcher@gnw.ai",
+      subject: String(actorUserId),
       tenant: "tenant-dev",
       ttlMs: 60_000,
       issuer: env.grantIssuer,
@@ -67,6 +69,8 @@ describe("GNW Governed Skills Engine & Top 50 Skills Catalog", () => {
         taskId,
         actorUserId,
         actionDigest,
+        tenant: "tenant-dev",
+        skillDigest,
         capabilityLease: lease,
         cognitiveStage: "act",
         parameters: {
@@ -92,6 +96,7 @@ describe("GNW Governed Skills Engine & Top 50 Skills Catalog", () => {
     const taskId = 302;
     const actorUserId = 1;
     const actionDigest = "test-action-digest-bad";
+    const skillDigest = skillDefinitionDigest(registry.getSkill("perplexity-deep-researcher")!);
 
     // Issue lease for WRONG capability (e.g. 'code.symbols' instead of 'browser.visual')
     const lease = issueCapabilityLease({
@@ -100,7 +105,7 @@ describe("GNW Governed Skills Engine & Top 50 Skills Catalog", () => {
       actorUserId,
       actionDigest,
       capability: "code.symbols",
-      subject: "attacker@gnw.ai",
+      subject: String(actorUserId),
       tenant: "tenant-dev",
       ttlMs: 60_000,
       issuer: env.grantIssuer,
@@ -114,6 +119,8 @@ describe("GNW Governed Skills Engine & Top 50 Skills Catalog", () => {
           taskId,
           actorUserId,
           actionDigest,
+          tenant: "tenant-dev",
+          skillDigest,
           capabilityLease: lease,
           cognitiveStage: "act",
           parameters: { query: "Security probe" },
@@ -127,6 +134,7 @@ describe("GNW Governed Skills Engine & Top 50 Skills Catalog", () => {
     const taskId = 303;
     const actorUserId = 1;
     const actionDigest = "test-action-digest-invalid-params";
+    const skillDigest = skillDefinitionDigest(registry.getSkill("perplexity-deep-researcher")!);
 
     const lease = issueCapabilityLease({
       requestId: "req-skill-test-03",
@@ -134,7 +142,7 @@ describe("GNW Governed Skills Engine & Top 50 Skills Catalog", () => {
       actorUserId,
       actionDigest,
       capability: "browser.visual",
-      subject: "researcher@gnw.ai",
+      subject: String(actorUserId),
       tenant: "tenant-dev",
       ttlMs: 60_000,
       issuer: env.grantIssuer,
@@ -149,6 +157,8 @@ describe("GNW Governed Skills Engine & Top 50 Skills Catalog", () => {
           taskId,
           actorUserId,
           actionDigest,
+          tenant: "tenant-dev",
+          skillDigest,
           capabilityLease: lease,
           cognitiveStage: "act",
           parameters: { query: "a" }, // Too short, fails schema

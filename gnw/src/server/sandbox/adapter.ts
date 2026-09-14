@@ -1,5 +1,5 @@
 import type { Env } from "../env.js";
-import { executeInRemoteExecutor, type RemoteExecutionResult } from "../executor-client.js";
+import { executeInRemoteExecutor, type ExecutorAuthorization, type RemoteExecutionResult } from "../executor-client.js";
 import { TaskSandbox, type SandboxOptions, type SandboxRunResult } from "./index.js";
 
 export type SandboxJob = {
@@ -9,6 +9,7 @@ export type SandboxJob = {
   files?: Array<{ path: string; content: string }>;
   timeoutMs?: number;
   maxOutputBytes?: number;
+  authorization?: ExecutorAuthorization;
 };
 
 export interface SandboxAdapter {
@@ -34,7 +35,8 @@ export class RemoteSandboxAdapter implements SandboxAdapter {
 
   async execute(job: SandboxJob): Promise<RemoteExecutionResult> {
     if (!this.env.executorRequired) throw new Error("remote_executor_not_required");
-    return executeInRemoteExecutor(this.env, job);
+    if (!job.authorization) throw new Error("executor_authorization_required");
+    return executeInRemoteExecutor(this.env, { ...job, authorization: job.authorization });
   }
 }
 

@@ -26,6 +26,8 @@ One codebase, three supported targets. The database adapter chooses its dialect 
 | `SESSION_TOKEN_IN_BODY` | no | `false` | Optional bearer transport for controlled clients. Prefer the HTTP-only session cookie. |
 | `GNW_GRANT_ISSUER` / `GNW_GRANT_PRIVATE_KEY_PEM` / `GNW_GRANT_PUBLIC_KEY_PEM` | yes in production | — | Ed25519 issuer identity and key pair used to sign and verify frozen capability grants. |
 | `GNW_ALLOWED_EGRESS_HOSTS` | yes when external provider is enabled | — | Explicit HTTPS host allowlist. Private/local destinations are blocked. |
+| `GNW_EXECUTOR_URL` / `GNW_EXECUTOR_SHARED_TOKEN` | yes when `GNW_EXECUTOR_REQUIRED=true` | — | HTTPS endpoint and transport token for the separate executor; the token is not a substitute for lease verification. |
+| `EXECUTOR_GRANT_ISSUER` / `EXECUTOR_GRANT_PUBLIC_KEY_PEM` | yes on the executor | — | The executor independently verifies the Ed25519 capability lease. Missing trust configuration causes every execution request to fail closed. |
 | `MAX_ARTIFACT_BYTES` / `MAX_PROVIDER_RESPONSE_BYTES` | no | 20MB / 1MB | Hard byte ceilings at storage/provider boundaries. |
 
 ### Cross-origin hosting
@@ -64,6 +66,8 @@ docker compose up --build
 ```
 
 The image is a multi-stage build ending on a non-root user with a healthcheck against `/api/health`. `/data` is a named volume for artifacts; Postgres has its own volume. Migrations run at boot, so a rolling restart is enough.
+
+The separate executor is not optional when `GNW_EXECUTOR_REQUIRED=true`. Deploy `Dockerfile.executor` as a distinct service over HTTPS, set `EXECUTOR_SHARED_TOKEN`, `EXECUTOR_GRANT_ISSUER`, and `EXECUTOR_GRANT_PUBLIC_KEY_PEM`, and configure the app with the executor HTTPS URL. Do not run the executor over plaintext HTTP in production. The executor independently verifies the signed lease, task, actor, tenant, capability, and action digest before starting a sandbox process.
 
 For a registry deployment:
 

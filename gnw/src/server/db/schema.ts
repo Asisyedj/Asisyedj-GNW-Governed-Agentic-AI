@@ -116,6 +116,7 @@ export function schemaStatements(dialect: Dialect): string[] {
       nonce TEXT NOT NULL UNIQUE,
       issuer TEXT NOT NULL,
       signature TEXT NOT NULL,
+      interlock_generation INTEGER NOT NULL DEFAULT 0,
       consumed_at ${ts}
     )`,
     `CREATE INDEX IF NOT EXISTS ix_capability_lease_task ON capability_leases (task_id, id)`,
@@ -235,6 +236,7 @@ export function schemaStatements(dialect: Dialect): string[] {
       updated_by INTEGER,
       updated_at ${ts} NOT NULL
     )`,
+    `INSERT INTO system_controls (key, value, updated_by, updated_at) VALUES ('interlock_generation', '0', NULL, 0) ON CONFLICT (key) DO NOTHING`,
     `CREATE TABLE IF NOT EXISTS sessions (id ${pk}, user_id INTEGER NOT NULL, token_hash TEXT NOT NULL UNIQUE, issued_at ${ts} NOT NULL, expires_at ${ts} NOT NULL, revoked_at ${ts})`,
     `CREATE INDEX IF NOT EXISTS ix_sessions_user ON sessions (user_id, expires_at)`,
     `CREATE TABLE IF NOT EXISTS login_attempts (

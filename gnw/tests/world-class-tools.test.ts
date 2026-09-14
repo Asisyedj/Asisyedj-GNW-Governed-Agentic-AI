@@ -45,6 +45,14 @@ const testUser: SessionUser = {
 };
 
 async function makeLease(db: Db, taskId: number, capability: string, actionDigest: string, destination?: string) {
+  const workspaceId = await repo.ensurePersonalWorkspace(db, testUser.id, testUser.email);
+  const existingTask = await db.get("SELECT id FROM tasks WHERE id = ?", [taskId]);
+  if (!existingTask) {
+    await db.run(
+      "INSERT INTO tasks (id, workspace_id, created_by, title, prompt, purpose, classification, status, selected_agents, budget_tokens, budget_bytes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [taskId, workspaceId, testUser.id, `task-${taskId}`, "phase3 test task", "security validation", "internal", "queued", JSON.stringify(["engineering"]), 1000, 1000, Date.now(), Date.now()],
+    );
+  }
   const lease = issueCapabilityLease({
     requestId: `req-${taskId}-${capability}-${Math.random().toString(36).slice(2, 8)}`,
     taskId,
@@ -52,7 +60,7 @@ async function makeLease(db: Db, taskId: number, capability: string, actionDiges
     actionDigest,
     capability,
     destination,
-    subject: testUser.email,
+    subject: String(testUser.id),
     tenant: testUser.tenantKey,
     ttlMs: 60_000,
     issuer: env.grantIssuer,

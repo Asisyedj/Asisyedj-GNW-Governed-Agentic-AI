@@ -248,9 +248,9 @@ export async function claimNonce(db: Db, kind: string, nonce: string, taskId?: n
   }
 }
 
-export async function createCapabilityLease(db: Db, input: { leaseId: string; requestId: string; actionDigest: string; subject: string; tenant: string; taskId: number; actorUserId: number; capability: string; destination?: string | null; issuedAt: number; expiresAt: number; nonce: string; issuer: string; signature: string }) {
-  await db.insert(`INSERT INTO capability_leases (lease_id, request_id, action_digest, subject, tenant, task_id, actor_user_id, capability, destination, issued_at, expires_at, nonce, issuer, signature) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
-    input.leaseId, input.requestId, input.actionDigest, input.subject, input.tenant, input.taskId, input.actorUserId, input.capability, input.destination ?? null, input.issuedAt, input.expiresAt, input.nonce, input.issuer, input.signature,
+export async function createCapabilityLease(db: Db, input: { leaseId: string; requestId: string; actionDigest: string; subject: string; tenant: string; taskId: number; actorUserId: number; capability: string; destination?: string | null; issuedAt: number; expiresAt: number; nonce: string; issuer: string; signature: string; interlockGeneration: number }) {
+  await db.insert(`INSERT INTO capability_leases (lease_id, request_id, action_digest, subject, tenant, task_id, actor_user_id, capability, destination, issued_at, expires_at, nonce, issuer, signature, interlock_generation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+    input.leaseId, input.requestId, input.actionDigest, input.subject, input.tenant, input.taskId, input.actorUserId, input.capability, input.destination ?? null, input.issuedAt, input.expiresAt, input.nonce, input.issuer, input.signature, input.interlockGeneration,
   ]);
   return input;
 }
@@ -261,21 +261,35 @@ export async function consumeCapabilityLease(db: Db, leaseId: string, nowMs = no
 }
 
 export async function getInterlock(db: Db): Promise<Interlock> {
-  const rows = await db.all<{ key: string; value: string }>("SELECT key, value FROM system_controls WHERE key IN ('kill_switch', 'circuit_open')");
+  const rows = await db.all<{ key: string; value: string }>("SELECT key, value FROM system_controls WHERE key IN ('kill_switch', 'circuit_open', 'interlock_generation')");
   const map = new Map(rows.map(row => [row.key, row.value]));
-  return { killSwitch: map.get("kill_switch") === "true", circuitOpen: map.get("circuit_open") === "true" };
+  return { killSwitch: map.get("kill_switch") === "true", circuitOpen: map.get("circuit_open") === "true", generation: Number(map.get("interlock_generation") ?? 0) };
 }
 
 export async function setInterlock(db: Db, values: Partial<Interlock>, updatedBy: number) {
   const entries: Array<[string, boolean | undefined]> = [["kill_switch", values.killSwitch], ["circuit_open", values.circuitOpen]];
   await db.transaction(async tx => {
+    let changed = false;
     for (const [key, value] of entries) {
       if (value === undefined) continue;
+      changed = true;
       const stamp = now();
       await tx.run("INSERT INTO system_controls (key, value, updated_by, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_by = excluded.updated_by, updated_at = excluded.updated_at", [key, String(value), updatedBy, stamp]);
     }
+    if (changed) {
+      const current = await tx.get<{ value: string }>("SELECT value FROM system_controls WHERE key = 'interlock_generation'");
+      const next = Number(current?.value ?? 0) + 1;
+      await tx.run("INSERT INTO system_controls (key, value, updated_by, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_by = excluded.updated_by, updated_at = excluded.updated_at", ["interlock_generation", String(next), updatedBy, now()]);
+    }
   });
   return getInterlock(db);
+}
+
+export async function getTaskExecutionContext(db: Db, taskId: number) {
+  return db.get<{ taskId: number; tenant: string }>(
+    "SELECT t.id AS taskId, w.tenant_key AS tenant FROM tasks t INNER JOIN workspaces w ON w.id = t.workspace_id WHERE t.id = ?",
+    [taskId],
+  );
 }
 
 export async function reserveBudget(db: Db, taskId: number, grantNonce: string, tokens: number, bytes: number) {

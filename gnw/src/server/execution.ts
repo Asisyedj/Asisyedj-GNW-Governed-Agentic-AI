@@ -7,9 +7,10 @@ import { verifyCapabilityLease, type CapabilityLease } from "./capability.js";
 
 export class ExecutionDenied extends Error { constructor(public readonly reason: string, public readonly stop = false) { super(reason); } }
 
-export async function assertFinalInterlock(db: Db) {
+export async function assertFinalInterlock(db: Db, expectedGeneration?: number) {
   const state = await repo.getInterlock(db);
   if (state.killSwitch || state.circuitOpen) throw new ExecutionDenied("safety_interlock", true);
+  if (expectedGeneration !== undefined && state.generation !== expectedGeneration) throw new ExecutionDenied("stale_interlock_generation", true);
 }
 
 export async function executeExternal<T>(p: {
@@ -19,15 +20,16 @@ export async function executeExternal<T>(p: {
   try {
     const lease = p.capabilityLease;
     if (!verifyCapabilityLease(lease, p.env.grantPublicKeyPem, Date.now(), p.destination ?? null)) throw new ExecutionDenied("invalid_capability_lease");
-    if (lease.taskId !== p.taskId || lease.actorUserId !== p.actorUserId || lease.actionDigest !== p.actionDigest || lease.capability !== p.capability) throw new ExecutionDenied("capability_binding");
+    const taskContext = await repo.getTaskExecutionContext(p.db, p.taskId);
+    if (!taskContext || lease.taskId !== p.taskId || lease.actorUserId !== p.actorUserId || lease.subject !== String(p.actorUserId) || lease.tenant !== taskContext.tenant || lease.actionDigest !== p.actionDigest || lease.capability !== p.capability) throw new ExecutionDenied("capability_binding");
     if (!(await repo.consumeCapabilityLease(p.db, lease.leaseId))) throw new ExecutionDenied("capability_replay");
-    await assertFinalInterlock(p.db);
+    await assertFinalInterlock(p.db, lease.interlockGeneration);
     if (p.destination) assertEgressUrl(p.destination, p.env.allowedEgressHosts);
     await appendAudit(p.db, { taskId: p.taskId, actorUserId: p.actorUserId, eventType: `${p.eventType}_effect_admission`, decision: "ALLOW", reason: "capability_lease_and_final_interlock_passed", payload: { actionDigest: p.actionDigest, capability: lease.capability, leaseId: lease.leaseId, destination: p.destination ?? null } });
     // Final fencing check: audit admission can take time, and the interlock may
     // change after the first check. Re-read immediately before the irreversible
     // effect so a newly asserted STOP blocks the sink.
-    await assertFinalInterlock(p.db);
+    await assertFinalInterlock(p.db, lease.interlockGeneration);
     const result = await p.effect();
     await appendAudit(p.db, { taskId: p.taskId, actorUserId: p.actorUserId, eventType: `${p.eventType}_effect_result`, decision: "ALLOW", reason: "external_effect_completed", payload: { actionDigest: p.actionDigest, leaseId: lease.leaseId } });
     return result;
