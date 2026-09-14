@@ -36,6 +36,8 @@ jobs:
         run: npm run build
       - name: Dependency audit
         run: npm audit --omit=dev
+      - name: External sink fence contract gate
+        run: npm run verify:sinks
       - name: 100-case evidence gate
         run: node scripts/validate-100-evidence.mjs
       - name: Release evidence gate
