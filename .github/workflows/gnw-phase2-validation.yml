@@ -1,0 +1,204 @@
+name: GNW Phase 2 Reproducible Validation
+
+on:
+  push:
+    branches:
+      - remediation/phase2-reproducible-validation-2026-09-14
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phase2-validation:
+    name: Clean install, typecheck, tests, build and evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: true
+      NPM_CONFIG_AUDIT: "false"
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+          cache-dependency-path: gnw/package-lock.json
+
+      - name: Record immutable run context
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p phase2-evidence
+          {
+            printf 'github_repository=%s\n' "$GITHUB_REPOSITORY"
+            printf 'github_ref=%s\n' "$GITHUB_REF"
+            printf 'github_sha=%s\n' "$GITHUB_SHA"
+            printf 'checkout_sha=%s\n' "$(git rev-parse HEAD)"
+            printf 'checkout_tree=%s\n' "$(git rev-parse HEAD^{tree})"
+            printf 'node=%s\n' "$(node --version)"
+            printf 'npm=%s\n' "$(npm --version)"
+            printf 'runner_os=%s\n' "$RUNNER_OS"
+            printf 'runner_arch=%s\n' "$RUNNER_ARCH"
+            printf 'package_lock_sha256=%s\n' "$(sha256sum gnw/package-lock.json | awk '{print $1}')"
+          } | tee phase2-evidence/run-context.txt
+          git status --porcelain | tee phase2-evidence/pre-status.txt
+
+      - name: Clean dependency install
+        id: npm_ci
+        shell: bash
+        run: |
+          set +e
+          rm -rf gnw/node_modules
+          (cd gnw && npm ci) 2>&1 | tee phase2-evidence/npm-ci.log
+          code=${PIPESTATUS[0]}
+          printf '%s\n' "$code" > phase2-evidence/npm-ci.exit
+          exit "$code"
+
+      - name: Dependency tree and cache verification
+        id: dependency_evidence
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          (cd gnw && npm ls --all --json) > phase2-evidence/npm-ls.json 2>&1
+          ls_code=$?
+          (cd gnw && npm cache verify) 2>&1 | tee phase2-evidence/npm-cache-verify.log
+          cache_code=${PIPESTATUS[0]}
+          printf '%s\n' "$ls_code" > phase2-evidence/npm-ls.exit
+          printf '%s\n' "$cache_code" > phase2-evidence/npm-cache-verify.exit
+          test "$ls_code" -eq 0 && test "$cache_code" -eq 0
+
+      - name: Typecheck
+        id: typecheck
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          (cd gnw && npm run typecheck) 2>&1 | tee phase2-evidence/typecheck.log
+          code=${PIPESTATUS[0]}
+          printf '%s\n' "$code" > phase2-evidence/typecheck.exit
+          exit "$code"
+
+      - name: Full TypeScript test suite
+        id: full_tests
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          (cd gnw && npm test) 2>&1 | tee phase2-evidence/full-tests.log
+          code=${PIPESTATUS[0]}
+          printf '%s\n' "$code" > phase2-evidence/full-tests.exit
+          exit "$code"
+
+      - name: Production build
+        id: build
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          (cd gnw && npm run build) 2>&1 | tee phase2-evidence/build.log
+          code=${PIPESTATUS[0]}
+          printf '%s\n' "$code" > phase2-evidence/build.exit
+          exit "$code"
+
+      - name: Dependency audit
+        id: audit
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          (cd gnw && npm audit --audit-level=high --json) > phase2-evidence/npm-audit.json 2>&1
+          code=$?
+          printf '%s\n' "$code" > phase2-evidence/npm-audit.exit
+          exit "$code"
+
+      - name: Python council tests
+        id: python_council
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          (cd gnw && npm run test:council-python) 2>&1 | tee phase2-evidence/python-council.log
+          code=${PIPESTATUS[0]}
+          printf '%s\n' "$code" > phase2-evidence/python-council.exit
+          exit "$code"
+
+      - name: OpenClaw package smoke tests
+        id: openclaw
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          python3 openclaw_portable/run_order_smoke_tests.py 2>&1 | tee phase2-evidence/openclaw-smoke.log
+          code=${PIPESTATUS[0]}
+          printf '%s\n' "$code" > phase2-evidence/openclaw-smoke.exit
+          exit "$code"
+
+      - name: Existing fail-closed release validators
+        id: release_validators
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          (cd gnw && node scripts/validate-release-evidence.mjs) 2>&1 | tee phase2-evidence/release-evidence.log
+          release_code=${PIPESTATUS[0]}
+          (cd gnw && node scripts/validate-100-evidence.mjs) 2>&1 | tee phase2-evidence/evidence-100.log
+          evidence_code=${PIPESTATUS[0]}
+          printf '%s\n' "$release_code" > phase2-evidence/release-evidence.exit
+          printf '%s\n' "$evidence_code" > phase2-evidence/evidence-100.exit
+          printf 'release_evidence=%s\nevidence_100=%s\n' "$release_code" "$evidence_code" | tee phase2-evidence/validator-summary.txt
+          # These validators are expected to remain nonzero while production gates are incomplete.
+          test "$release_code" -eq 2 && test "$evidence_code" -eq 2
+
+      - name: Build artifact inventory
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          find gnw/dist -type f -print 2>/dev/null | sort | tee phase2-evidence/build-files.txt
+          if test -s phase2-evidence/build-files.txt; then
+            sha256sum $(cat phase2-evidence/build-files.txt) > phase2-evidence/build-sha256.txt
+          fi
+          git status --porcelain | tee phase2-evidence/post-status.txt
+          printf '%s\n' "$(git diff --exit-code >/dev/null; echo $?)" > phase2-evidence/working-tree-diff.exit
+
+      - name: Summarize exit codes
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            for f in phase2-evidence/*.exit; do
+              printf '%s=%s\n' "$(basename "$f" .exit)" "$(cat "$f")"
+            done
+          } | sort | tee phase2-evidence/exit-summary.txt
+          sha256sum phase2-evidence/* > phase2-evidence/evidence-sha256.txt
+
+      - name: Upload Phase 2 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gnw-phase2-evidence-${{ github.run_id }}
+          path: phase2-evidence
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Enforce Phase 2 core gate
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in npm-ci npm-ls npm-cache-verify typecheck full-tests build npm-audit python-council openclaw-smoke; do
+            test "$(cat "phase2-evidence/${f}.exit")" = 0 || { echo "CORE GATE FAILED: $f"; exit 1; }
+          done
+          test "$(cat phase2-evidence/release-evidence.exit)" = 2
+          test "$(cat phase2-evidence/evidence-100.exit)" = 2
+          echo 'PASS: Phase 2 core reproducibility checks completed; production validators remain fail-closed.'
