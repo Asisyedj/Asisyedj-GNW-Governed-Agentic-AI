@@ -47,6 +47,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env) {
     llmBaseUrl: (source.LLM_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, ""),
     llmApiKey: source.LLM_API_KEY ?? "",
     llmModel: source.LLM_MODEL ?? "gpt-4o-mini",
+    llmProviderIdempotencyRequired: bool(source.GNW_LLM_IDEMPOTENCY_REQUIRED, isProduction),
     llmTimeoutMs: int(source.LLM_TIMEOUT_MS, 45_000),
     storageDriver: (source.STORAGE_DRIVER ?? "local") as "local" | "s3",
     artifactDir: source.ARTIFACT_DIR ?? "./data/artifacts",
@@ -64,6 +65,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env) {
     videoProviderIdempotencyRequired: bool(source.VIDEO_PROVIDER_IDEMPOTENCY_REQUIRED, isProduction),
     videoProviderFencingRequired: bool(source.VIDEO_PROVIDER_FENCING_REQUIRED, isProduction),
     notifyWebhookUrl: source.NOTIFY_WEBHOOK_URL ?? "",
+    notifyProviderIdempotencyRequired: bool(source.GNW_NOTIFY_IDEMPOTENCY_REQUIRED, isProduction),
     // "none" is required only when the client is served from a different origin
     // than the API; it forces Secure and therefore HTTPS.
     cookieSameSite: ((source.COOKIE_SAME_SITE ?? "lax").toLowerCase() as "lax" | "strict" | "none"),
@@ -137,10 +139,12 @@ export function assertProductionEnvironment(env: Env = ENV) {
   if (env.grantTtlMs <= 0 || env.grantTtlMs > env.maxGrantTtlMs) failures.push("GRANT_TTL_MS must be positive and <= MAX_GRANT_TTL_MS");
   if (env.capabilityLeaseTtlMs <= 0 || env.capabilityLeaseTtlMs > env.grantTtlMs) failures.push("GNW_CAPABILITY_LEASE_TTL_MS must be positive and <= GRANT_TTL_MS");
   if (env.llmApiKey && env.allowedEgressHosts.length === 0) failures.push("Configured LLM requires GNW_ALLOWED_EGRESS_HOSTS");
+  if (env.llmApiKey && !env.llmProviderIdempotencyRequired) failures.push("Configured LLM requires GNW_LLM_IDEMPOTENCY_REQUIRED=true in production");
   if (env.videoProviderUrl && env.allowedEgressHosts.length === 0) failures.push("Configured provider requires GNW_ALLOWED_EGRESS_HOSTS");
   if (env.videoProviderUrl && !env.videoProviderIdempotencyRequired) failures.push("Configured provider requires VIDEO_PROVIDER_IDEMPOTENCY_REQUIRED=true in production");
   if (env.videoProviderUrl && !env.videoProviderFencingRequired) failures.push("Configured provider requires VIDEO_PROVIDER_FENCING_REQUIRED=true in production");
   if (env.notifyWebhookUrl && env.allowedEgressHosts.length === 0) failures.push("Configured notification webhook requires GNW_ALLOWED_EGRESS_HOSTS");
+  if (env.notifyWebhookUrl && !env.notifyProviderIdempotencyRequired) failures.push("Configured notification webhook requires GNW_NOTIFY_IDEMPOTENCY_REQUIRED=true in production");
   if (env.s3.endpoint && env.allowedEgressHosts.length === 0) failures.push("Configured S3 endpoint requires GNW_ALLOWED_EGRESS_HOSTS");
   if (env.allowedEgressHosts.some(host => host === "*" || host.startsWith("*.*"))) failures.push("Wildcard egress host policy is not permitted");
   if (env.executorRequired && (!env.executorUrl || !env.executorSharedToken)) failures.push("GNW_EXECUTOR_URL and GNW_EXECUTOR_SHARED_TOKEN are required when executor isolation is enabled");

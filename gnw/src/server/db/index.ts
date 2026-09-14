@@ -14,11 +14,13 @@ export class UniqueViolation extends Error {
 
 export interface Db {
   dialect: Dialect;
+  tenantKey?: string;
   all<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]>;
   get<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T | undefined>;
   run(sql: string, params?: unknown[]): Promise<{ changes: number }>;
   insert(sql: string, params?: unknown[]): Promise<number>;
   transaction<T>(fn: (tx: Db) => Promise<T>): Promise<T>;
+  withTenant(tenantKey: string): Db;
   close(): Promise<void>;
 }
 
@@ -26,6 +28,39 @@ export interface Db {
 function toPgSql(sql: string) {
   let index = 0;
   return sql.replace(/\?/g, () => `$${++index}`);
+}
+
+function withTenant(base: Db, tenantKey: string): Db {
+  if (base.tenantKey === tenantKey) return base;
+  const scoped = (tx: Db): Db => withTenant(tx, tenantKey);
+  const setTenant = async (tx: Db) => {
+    if (tx.dialect === "postgres") await tx.run("SELECT set_config('gnw.tenant_key', ?, true)", [tenantKey]);
+  };
+  return {
+    dialect: base.dialect,
+    tenantKey,
+    async all<T>(sql: string, params: unknown[] = []) {
+      if (base.dialect === "sqlite") return base.all<T>(sql, params);
+      return base.transaction(async tx => { await setTenant(tx); return tx.all<T>(sql, params); });
+    },
+    async get<T>(sql: string, params: unknown[] = []) {
+      if (base.dialect === "sqlite") return base.get<T>(sql, params);
+      return base.transaction(async tx => { await setTenant(tx); return tx.get<T>(sql, params); });
+    },
+    async run(sql: string, params: unknown[] = []) {
+      if (base.dialect === "sqlite") return base.run(sql, params);
+      return base.transaction(async tx => { await setTenant(tx); return tx.run(sql, params); });
+    },
+    async insert(sql: string, params: unknown[] = []) {
+      if (base.dialect === "sqlite") return base.insert(sql, params);
+      return base.transaction(async tx => { await setTenant(tx); return tx.insert(sql, params); });
+    },
+    async transaction<T>(fn: (tx: Db) => Promise<T>) {
+      return base.transaction(async tx => { await setTenant(tx); return fn(scoped(tx)); });
+    },
+    withTenant(nextTenant: string) { return withTenant(base, nextTenant); },
+    async close() { return base.close(); },
+  };
 }
 
 function isUniqueViolation(error: unknown) {
@@ -73,6 +108,7 @@ async function createSqlite(url: string): Promise<Db> {
       try { const value = await fn(this as unknown as Db); handle.exec("COMMIT"); return value; }
       catch (error) { try { handle.exec("ROLLBACK"); } catch {} throw error; }
     },
+    withTenant(tenantKey: string) { return withTenant(this as unknown as Db, tenantKey); },
     async close() { handle.close(); },
   };
 }
@@ -120,6 +156,7 @@ async function createPostgres(url: string): Promise<Db> {
         run: async (sql: string, params: unknown[] = []) => ({ changes: (await client.query(toPgSql(sql), params as never[])).rowCount ?? 0 }),
         insert: async (sql: string, params: unknown[] = []) => Number((await client.query(`${toPgSql(sql)} RETURNING id`, params as never[])).rows[0].id),
         transaction: async <R>(nested: (tx: Db) => Promise<R>) => nested(txDb),
+        withTenant: (tenantKey: string) => withTenant(txDb, tenantKey),
         close: async () => undefined,
       };
       let released = false;
@@ -129,6 +166,7 @@ async function createPostgres(url: string): Promise<Db> {
       catch (error) { try { await client.query("ROLLBACK"); } finally { safeRelease(); } throw error; }
       finally { safeRelease(); }
     },
+    withTenant(tenantKey: string) { return withTenant(this as unknown as Db, tenantKey); },
     async close() { await pool.end(); },
   };
 }
@@ -145,6 +183,13 @@ export async function migrate(db: Db) {
   // Additive compatibility for databases created before Phase 3.
   try {
     await db.run("ALTER TABLE capability_leases ADD COLUMN interlock_generation INTEGER NOT NULL DEFAULT 0");
+  } catch (error) {
+    const code = (error as { code?: string } | null)?.code;
+    const message = error instanceof Error ? error.message : String(error);
+    if (code !== "42701" && !/duplicate column name|already exists/i.test(message)) throw error;
+  }
+  try {
+    await db.run("ALTER TABLE notifications ADD COLUMN tenant_key TEXT");
   } catch (error) {
     const code = (error as { code?: string } | null)?.code;
     const message = error instanceof Error ? error.message : String(error);

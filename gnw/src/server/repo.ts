@@ -226,9 +226,11 @@ export async function listArtifacts(db: Db, taskId: number) {
 
 /* ---------------------------------------------------------- notifications */
 
-export async function recordNotification(db: Db, input: { userId?: number | null; taskId?: number | null; title: string; body: string; channel: string; delivered: boolean }) {
-  return db.insert("INSERT INTO notifications (user_id, task_id, title, body, channel, delivered, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [
-    input.userId ?? null, input.taskId ?? null, input.title, input.body, input.channel, input.delivered ? 1 : 0, now(),
+export async function recordNotification(db: Db, input: { userId?: number | null; taskId?: number | null; tenantKey?: string | null; title: string; body: string; channel: string; delivered: boolean }) {
+  const tenantKey = input.tenantKey ?? (input.taskId ? (await getTaskExecutionContext(db, input.taskId))?.tenant : null);
+  if (!tenantKey) throw new Error("notification_tenant_required");
+  return db.insert("INSERT INTO notifications (user_id, task_id, tenant_key, title, body, channel, delivered, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
+    input.userId ?? null, input.taskId ?? null, tenantKey, input.title, input.body, input.channel, input.delivered ? 1 : 0, now(),
   ]);
 }
 

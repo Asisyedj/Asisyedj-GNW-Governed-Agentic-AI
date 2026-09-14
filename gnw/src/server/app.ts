@@ -13,7 +13,7 @@ import { authorizeArtifactStorage, buildGrant, governanceService, runTask, sha25
 import { submitApprovedVideoJob, pollVideoJob } from "./video.js";
 import { storagePut } from "./storage.js";
 import { signGrant, canonicalize } from "./security.js";
-import { executeExternal } from "./execution.js";
+import { executeExternal, executeFencedExternal } from "./execution.js";
 import { runGovernedCommand, runGovernedPython, runGovernedFileRead, runGovernedFileWrite, runGovernedFileList } from "./tools/executor.js";
 import { runGovernedBrowse } from "./tools/browser.js";
 import { runGovernedVisualInspect, runGovernedBrowserAction } from "./tools/visual-browser.js";
@@ -100,6 +100,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
       const user = await loadSessionUser(db, req, env);
       if (!user) return res.status(401).json({ error: "unauthenticated" });
       req.user = user;
+      req.db = db.withTenant(user.tenantKey);
       next();
     } catch (error) {
       next(error);
@@ -140,9 +141,9 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
       await signIn(db, userId);
       const token = await createSession(db, userId, env.sessionSecret);
       setSessionCookie(res, token, env);
-      await appendAudit(db, { actorUserId: userId, eventType: "user_registered", decision: "ALLOW", reason: "account_created", payload: { email: parsed.data.email } });
-      const created = await repo.findUserById(db, userId);
-      const workspaceId = await repo.ensurePersonalWorkspace(db, userId, parsed.data.email);
+      await appendAudit(req.db, { actorUserId: userId, eventType: "user_registered", decision: "ALLOW", reason: "account_created", payload: { email: parsed.data.email } });
+      const created = await repo.findUserById(req.db, userId);
+      const workspaceId = await repo.ensurePersonalWorkspace(req.db, userId, parsed.data.email);
       return res.status(201).json({ user: { id: userId, email: parsed.data.email, name: created?.name ?? null, role: created?.role ?? "user", workspaceId, tenantKey: `tenant-user-${userId}` }, ...(env.sessionTokenInBody ? { token } : {}) });
     } catch (error) {
       const code = error instanceof Error ? error.message : "registration_failed";
@@ -156,22 +157,22 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
     if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
     const email = parsed.data.email.trim().toLowerCase();
     const ip = req.ip ?? "unknown";
-    if ((await repo.recentFailedLogins(db, email)) >= 8) {
-      await appendAudit(db, { eventType: "login_throttled", decision: "DENY", reason: "too_many_attempts", payload: { email } });
+    if ((await repo.recentFailedLogins(req.db, email)) >= 8) {
+      await appendAudit(req.db, { eventType: "login_throttled", decision: "DENY", reason: "too_many_attempts", payload: { email } });
       return res.status(429).json({ error: "too_many_attempts" });
     }
-    const user = await repo.findUserByEmail(db, email);
+    const user = await repo.findUserByEmail(req.db, email);
     const ok = user ? await verifyPassword(parsed.data.password, user.password_hash) : false;
-    await repo.recordLoginAttempt(db, email, ip, ok);
+    await repo.recordLoginAttempt(req.db, email, ip, ok);
     if (!user || !ok) {
-      await appendAudit(db, { eventType: "login_failed", decision: "DENY", reason: "invalid_credentials", payload: { email } });
+      await appendAudit(req.db, { eventType: "login_failed", decision: "DENY", reason: "invalid_credentials", payload: { email } });
       return res.status(401).json({ error: "invalid_credentials" });
     }
     await signIn(db, user.id);
-    await repo.ensurePersonalWorkspace(db, user.id, user.email);
+    await repo.ensurePersonalWorkspace(req.db, user.id, user.email);
     const token = await createSession(db, user.id, env.sessionSecret);
     setSessionCookie(res, token, env);
-    await appendAudit(db, { actorUserId: user.id, eventType: "login_succeeded", decision: "ALLOW", reason: "session_issued", payload: { email } });
+    await appendAudit(req.db, { actorUserId: user.id, eventType: "login_succeeded", decision: "ALLOW", reason: "session_issued", payload: { email } });
     return res.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role }, ...(env.sessionTokenInBody ? { token } : {}) });
   }));
 
@@ -192,7 +193,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
 
   app.get("/api/auth/me", asyncRoute(async (req, res) => {
     const user = await loadSessionUser(db, req, env);
-    const bootstrap = (await repo.countUsers(db)) === 0;
+    const bootstrap = (await repo.countUsers(req.db)) === 0;
     res.json({ user, bootstrap, allowSelfRegistration: env.allowSelfRegistration });
   }));
 
@@ -200,12 +201,12 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
 
   app.get("/api/workspace/summary", auth(), asyncRoute(async (req, res) => {
     const user = req.user!;
-    await repo.expireApprovals(db);
+    await repo.expireApprovals(req.db);
     const [tasks, approvals, interlock, notifications] = await Promise.all([
-      repo.listTasks(db, user.workspaceId),
-      repo.listApprovals(db, user.workspaceId),
-      repo.getInterlock(db),
-      repo.listNotifications(db, user.id, 20),
+      repo.listTasks(req.db, user.workspaceId),
+      repo.listApprovals(req.db, user.workspaceId),
+      repo.getInterlock(req.db),
+      repo.listNotifications(req.db, user.id, 20),
     ]);
     res.json({
       user,
@@ -230,15 +231,15 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
   });
 
   app.get("/api/tasks", auth(), asyncRoute(async (req, res) => {
-    res.json({ tasks: await repo.listTasks(db, req.user!.workspaceId) });
+    res.json({ tasks: await repo.listTasks(req.db, req.user!.workspaceId) });
   }));
 
   app.post("/api/tasks", auth(), asyncRoute(async (req, res) => {
     const parsed = taskInput.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "invalid_input", detail: parsed.error.flatten() });
-    const interlock = await repo.getInterlock(db);
+    const interlock = await repo.getInterlock(req.db);
     if (interlock.killSwitch || interlock.circuitOpen) {
-      await appendAudit(db, { actorUserId: req.user!.id, eventType: "task_admission", decision: "STOP", reason: "safety_interlock", payload: { purpose: parsed.data.purpose } });
+      await appendAudit(req.db, { actorUserId: req.user!.id, eventType: "task_admission", decision: "STOP", reason: "safety_interlock", payload: { purpose: parsed.data.purpose } });
       return res.status(423).json({ error: "safety_interlock", detail: "The kill switch or circuit breaker is engaged. No task can be admitted." });
     }
     const result = await runTask(db, req.user!, parsed.data, env);
@@ -248,15 +249,15 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
   app.get("/api/tasks/:taskId", auth(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId) || taskId <= 0) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await repo.getTaskForUser(db, taskId, req.user!.workspaceId);
+    const task = await repo.getTaskForUser(req.db, taskId, req.user!.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
     const [messages, runs, approvals, videoJobs, artifacts, audit] = await Promise.all([
-      repo.listMessages(db, taskId),
-      repo.listAgentRuns(db, taskId),
-      repo.listApprovals(db, req.user!.workspaceId),
-      repo.listVideoJobs(db, taskId),
-      repo.listArtifacts(db, taskId),
-      listAudit(db, taskId),
+      repo.listMessages(req.db, taskId),
+      repo.listAgentRuns(req.db, taskId),
+      repo.listApprovals(req.db, req.user!.workspaceId),
+      repo.listVideoJobs(req.db, taskId),
+      repo.listArtifacts(req.db, taskId),
+      listAudit(req.db, taskId),
     ]);
     return res.json({ task, messages, runs, approvals: approvals.filter(item => item.task_id === taskId), videoJobs, artifacts, audit });
   }));
@@ -264,31 +265,31 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
   /* ---------------------------------------------------------- approvals */
 
   app.get("/api/approvals", auth(), asyncRoute(async (req, res) => {
-    await repo.expireApprovals(db);
-    res.json({ approvals: await repo.listApprovals(db, req.user!.workspaceId) });
+    await repo.expireApprovals(req.db);
+    res.json({ approvals: await repo.listApprovals(req.db, req.user!.workspaceId) });
   }));
 
   app.post("/api/approvals/:approvalId/review", auth(), asyncRoute(async (req, res) => {
     const approvalId = Number(req.params.approvalId);
     const parsed = z.object({ status: z.enum(["approved", "denied"]) }).safeParse(req.body);
     if (!Number.isInteger(approvalId) || !parsed.success) return res.status(400).json({ error: "invalid_input" });
-    await repo.expireApprovals(db);
-    const approval = await repo.getApproval(db, approvalId);
+    await repo.expireApprovals(req.db);
+    const approval = await repo.getApproval(req.db, approvalId);
     if (!approval) return res.status(404).json({ error: "approval_not_found" });
-    const task = await repo.getTaskForUser(db, approval.task_id, req.user!.workspaceId);
+    const task = await repo.getTaskForUser(req.db, approval.task_id, req.user!.workspaceId);
     if (!task) return res.status(403).json({ error: "tenant_binding" });
     if (approval.requested_by === req.user!.id && req.user!.role !== "admin") {
       // Separation of duties: a requester cannot self-approve unless they are
       // the workspace admin acting as the accountable reviewer.
-      await appendAudit(db, { taskId: approval.task_id, actorUserId: req.user!.id, eventType: "approval_review", decision: "DENY", reason: "separation_of_duties", payload: { approvalId } });
+      await appendAudit(req.db, { taskId: approval.task_id, actorUserId: req.user!.id, eventType: "approval_review", decision: "DENY", reason: "separation_of_duties", payload: { approvalId } });
       return res.status(403).json({ error: "separation_of_duties" });
     }
-    const updated = await repo.reviewApproval(db, approvalId, req.user!.id, parsed.data.status);
+    const updated = await repo.reviewApproval(req.db, approvalId, req.user!.id, parsed.data.status);
     if (!updated) return res.status(409).json({ error: "approval_not_pending_or_expired" });
-    await appendAudit(db, { taskId: approval.task_id, actorUserId: req.user!.id, eventType: "approval_review", decision: parsed.data.status === "approved" ? "ALLOW" : "DENY", reason: `approval_${parsed.data.status}`, payload: { approvalId, actionDigest: approval.action_digest } });
+    await appendAudit(req.db, { taskId: approval.task_id, actorUserId: req.user!.id, eventType: "approval_review", decision: parsed.data.status === "approved" ? "ALLOW" : "DENY", reason: `approval_${parsed.data.status}`, payload: { approvalId, actionDigest: approval.action_digest } });
     if (parsed.data.status === "denied" && approval.video_job_id) {
-      await repo.updateVideoJob(db, approval.video_job_id, { status: "stopped", errorMessage: "approval_denied" });
-      await repo.updateTaskStatus(db, approval.task_id, "denied");
+      await repo.updateVideoJob(req.db, approval.video_job_id, { status: "stopped", errorMessage: "approval_denied" });
+      await repo.updateTaskStatus(req.db, approval.task_id, "denied");
     }
     return res.json({ success: true, status: parsed.data.status });
   }));
@@ -306,12 +307,12 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
   app.get("/api/video/:jobId", auth(), asyncRoute(async (req, res) => {
     const jobId = Number(req.params.jobId);
     if (!Number.isInteger(jobId)) return res.status(400).json({ error: "invalid_job_id" });
-    const job = await repo.getVideoJob(db, jobId);
+    const job = await repo.getVideoJob(req.db, jobId);
     if (!job) return res.status(404).json({ error: "video_job_not_found" });
-    const task = await repo.getTaskForUser(db, job.task_id, req.user!.workspaceId);
+    const task = await repo.getTaskForUser(req.db, job.task_id, req.user!.workspaceId);
     if (!task) return res.status(403).json({ error: "tenant_binding" });
     const refreshed = await pollVideoJob(db, req.user!, jobId, env);
-    return res.json({ job: refreshed ?? job, artifacts: await repo.listArtifacts(db, job.task_id) });
+    return res.json({ job: refreshed ?? job, artifacts: await repo.listArtifacts(req.db, job.task_id) });
   }));
 
   /* ---------------------------------------------------------- artifacts */
@@ -326,18 +327,21 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
       })
       .safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
-    const task = await repo.getTaskForUser(db, parsed.data.taskId, req.user!.workspaceId);
+    const task = await repo.getTaskForUser(req.db, parsed.data.taskId, req.user!.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
     const digest = sha256(parsed.data.content);
-    const storageDecision = await authorizeArtifactStorage(db, req.user!, task.id, task.classification, digest, env);
+    const storageDecision = await authorizeArtifactStorage(req.db, req.user!, task.id, task.classification, digest, env);
     if (!storageDecision.allowed || !storageDecision.capabilityLease) {
       return res.status(storageDecision.status === "STOP" ? 503 : 403).json({ error: storageDecision.reason });
     }
-    const stored = await executeExternal({
-      db, env, taskId: task.id, actorUserId: req.user!.id, eventType: "artifact_storage", actionDigest: storageDecision.actionDigest, capabilityLease: storageDecision.capabilityLease, capability: "artifact.storage",
-      effect: () => storagePut(`tasks/${task.id}/${parsed.data.kind}/${digest}.artifact`, parsed.data.content, parsed.data.contentType, env),
+    const storageKey = `tasks/${task.id}/${parsed.data.kind}/${digest}.artifact`;
+    const fenced = await executeFencedExternal({
+      db: req.db, env, taskId: task.id, actorUserId: req.user!.id, tenant: req.user!.tenantKey, eventType: "artifact_storage", actionDigest: storageDecision.actionDigest, capabilityLease: storageDecision.capabilityLease, capability: "artifact.storage", provider: env.storageDriver, effectKey: `artifact:${req.user!.tenantKey}:${storageKey}`, idempotencyKey: sha256(`GNW-ARTIFACT-IDEMPOTENCY-V1|${req.user!.tenantKey}|${storageKey}|${digest}`),
+      effect: async () => ({ result: await storagePut(storageKey, parsed.data.content, parsed.data.contentType, env), providerEffectId: storageKey, responseDigest: digest }),
     });
-    await repo.createArtifact(db, {
+    if (fenced.status !== "COMPLETED" || !fenced.result) return res.status(409).json({ error: "artifact_storage_pending_reconciliation" });
+    const stored = fenced.result;
+    await repo.createArtifact(req.db, {
       taskId: task.id,
       kind: parsed.data.kind,
       storageKey: stored.key,
@@ -347,7 +351,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
       sha256: digest,
       createdBy: req.user!.id,
     });
-    await appendAudit(db, { taskId: task.id, actorUserId: req.user!.id, eventType: "artifact_registered", decision: "ALLOW", reason: "external_storage_reference_created", payload: { kind: parsed.data.kind, storageKey: stored.key, sha256: digest } });
+    await appendAudit(req.db, { taskId: task.id, actorUserId: req.user!.id, eventType: "artifact_registered", decision: "ALLOW", reason: "external_storage_reference_created", payload: { kind: parsed.data.kind, storageKey: stored.key, sha256: digest } });
     return res.status(201).json({ key: stored.key, url: stored.url, sha256: digest, byteSize: stored.byteSize, driver: stored.driver });
   }));
 
@@ -356,7 +360,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
   app.post("/api/tasks/:taskId/execute", auth(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId)) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await repo.getTaskForUser(db, taskId, req.user!.workspaceId);
+    const task = await repo.getTaskForUser(req.db, taskId, req.user!.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
 
     const parsed = z
@@ -401,42 +405,42 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
       grant.signature = signed.signature;
     }
 
-    const decision = await governanceService(db, env).authorize(grant);
+    const decision = await governanceService(req.db, env).authorize(grant);
     if (!decision.allowed || !decision.capabilityLease) {
       return res.status(decision.status === "STOP" ? 423 : 403).json({ error: decision.reason });
     }
 
     if (parsed.data.operation === "exec.command") {
       const result = await runGovernedCommand({
-        db, env, user: req.user!, taskId: task.id, command: parsed.data.command ?? "echo ok",
+        db: req.db, env, user: req.user!, taskId: task.id, command: parsed.data.command ?? "echo ok",
         actionDigest: decision.actionDigest, capabilityLease: decision.capabilityLease,
       });
       return res.json(result);
     }
     if (parsed.data.operation === "exec.python") {
       const result = await runGovernedPython({
-        db, env, user: req.user!, taskId: task.id, script: parsed.data.script ?? "print('ok')",
+        db: req.db, env, user: req.user!, taskId: task.id, script: parsed.data.script ?? "print('ok')",
         actionDigest: decision.actionDigest, capabilityLease: decision.capabilityLease,
       });
       return res.json(result);
     }
     if (parsed.data.operation === "file.read") {
       const result = await runGovernedFileRead({
-        db, env, user: req.user!, taskId: task.id, filePath: parsed.data.filePath ?? "README.md",
+        db: req.db, env, user: req.user!, taskId: task.id, filePath: parsed.data.filePath ?? "README.md",
         actionDigest: decision.actionDigest, capabilityLease: decision.capabilityLease,
       });
       return res.json(result);
     }
     if (parsed.data.operation === "file.write") {
       const result = await runGovernedFileWrite({
-        db, env, user: req.user!, taskId: task.id, filePath: parsed.data.filePath ?? "output.txt", content: parsed.data.content ?? "",
+        db: req.db, env, user: req.user!, taskId: task.id, filePath: parsed.data.filePath ?? "output.txt", content: parsed.data.content ?? "",
         actionDigest: decision.actionDigest, capabilityLease: decision.capabilityLease,
       });
       return res.json(result);
     }
     if (parsed.data.operation === "file.list") {
       const result = await runGovernedFileList({
-        db, env, user: req.user!, taskId: task.id, dirPath: parsed.data.filePath ?? ".",
+        db: req.db, env, user: req.user!, taskId: task.id, dirPath: parsed.data.filePath ?? ".",
         actionDigest: decision.actionDigest, capabilityLease: decision.capabilityLease,
       });
       return res.json(result);
@@ -447,7 +451,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
   app.post("/api/tasks/:taskId/browse", auth(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId)) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await repo.getTaskForUser(db, taskId, req.user!.workspaceId);
+    const task = await repo.getTaskForUser(req.db, taskId, req.user!.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
 
     const parsed = z
@@ -481,13 +485,13 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
       grant.signature = signed.signature;
     }
 
-    const decision = await governanceService(db, env).authorize(grant);
+    const decision = await governanceService(req.db, env).authorize(grant);
     if (!decision.allowed || !decision.capabilityLease) {
       return res.status(decision.status === "STOP" ? 423 : 403).json({ error: decision.reason });
     }
 
     const result = await runGovernedBrowse({
-      db, env, user: req.user!, taskId: task.id, url: parsed.data.url,
+      db: req.db, env, user: req.user!, taskId: task.id, url: parsed.data.url,
       actionDigest: decision.actionDigest, capabilityLease: decision.capabilityLease,
     });
     return res.json(result);
@@ -498,7 +502,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
   app.post("/api/tasks/:taskId/visual-browse", auth(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId)) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await repo.getTaskForUser(db, taskId, req.user!.workspaceId);
+    const task = await repo.getTaskForUser(req.db, taskId, req.user!.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
 
     const parsed = z.object({
@@ -534,14 +538,14 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
       grant.signature = signed.signature;
     }
 
-    const decision = await governanceService(db, env).authorize(grant);
+    const decision = await governanceService(req.db, env).authorize(grant);
     if (!decision.allowed || !decision.capabilityLease) {
       return res.status(decision.status === "STOP" ? 423 : 403).json({ error: decision.reason });
     }
 
     if (parsed.data.action === "inspect") {
       const result = await runGovernedVisualInspect({
-        db,
+        db: req.db,
         env,
         user: req.user!,
         taskId: task.id,
@@ -553,7 +557,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
       return res.json(result);
     } else {
       const result = await runGovernedBrowserAction({
-        db,
+        db: req.db,
         env,
         user: req.user!,
         taskId: task.id,
@@ -571,7 +575,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
   app.post("/api/tasks/:taskId/git", auth(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId)) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await repo.getTaskForUser(db, taskId, req.user!.workspaceId);
+    const task = await repo.getTaskForUser(req.db, taskId, req.user!.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
 
     const parsed = z.object({
@@ -607,7 +611,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
       grant.signature = signed.signature;
     }
 
-    const decision = await governanceService(db, env).authorize(grant);
+    const decision = await governanceService(req.db, env).authorize(grant);
     if (!decision.allowed || !decision.capabilityLease) {
       return res.status(decision.status === "STOP" ? 423 : 403).json({ error: decision.reason });
     }
@@ -626,7 +630,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
   app.post("/api/tasks/:taskId/memory", auth(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId)) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await repo.getTaskForUser(db, taskId, req.user!.workspaceId);
+    const task = await repo.getTaskForUser(req.db, taskId, req.user!.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
 
     const parsed = z.object({
@@ -661,7 +665,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
       grant.signature = signed.signature;
     }
 
-    const decision = await governanceService(db, env).authorize(grant);
+    const decision = await governanceService(req.db, env).authorize(grant);
     if (!decision.allowed || !decision.capabilityLease) {
       return res.status(decision.status === "STOP" ? 423 : 403).json({ error: decision.reason });
     }
@@ -676,7 +680,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
   app.post("/api/tasks/:taskId/code", auth(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId)) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await repo.getTaskForUser(db, taskId, req.user!.workspaceId);
+    const task = await repo.getTaskForUser(req.db, taskId, req.user!.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
 
     const parsed = z.object({
@@ -710,7 +714,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
       grant.signature = signed.signature;
     }
 
-    const decision = await governanceService(db, env).authorize(grant);
+    const decision = await governanceService(req.db, env).authorize(grant);
     if (!decision.allowed || !decision.capabilityLease) {
       return res.status(decision.status === "STOP" ? 423 : 403).json({ error: decision.reason });
     }
@@ -727,18 +731,18 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
   app.get("/api/audit", auth(), adminOnly(), asyncRoute(async (req, res) => {
     const taskId = req.query.taskId ? Number(req.query.taskId) : undefined;
     if (taskId) {
-      const task = await repo.getTaskForUser(db, taskId, req.user!.workspaceId);
+      const task = await repo.getTaskForUser(req.db, taskId, req.user!.workspaceId);
       if (!task) return res.status(404).json({ error: "task_not_found" });
     }
-    return res.json({ events: await listAudit(db, taskId, 300) });
+    return res.json({ events: await listAudit(req.db, taskId, 300) });
   }));
 
   app.get("/api/audit/bundle/:taskId", auth(), adminOnly(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId)) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await repo.getTaskForUser(db, taskId, req.user!.workspaceId);
+    const task = await repo.getTaskForUser(req.db, taskId, req.user!.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
-    const bundle = await exportAuditProofBundle(db, taskId);
+    const bundle = await exportAuditProofBundle(req.db, taskId);
     return res.json(bundle);
   }));
 
@@ -757,21 +761,21 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
     return res.json({ valid, targetHash: parsed.data.targetHash, rootHash: parsed.data.rootHash });
   }));
 
-  app.get("/api/audit/verify", auth(), adminOnly(), asyncRoute(async (_req, res) => {
-    res.json(await verifyAuditChain(db));
+  app.get("/api/audit/verify", auth(), adminOnly(), asyncRoute(async (req, res) => {
+    res.json(await verifyAuditChain(req.db));
   }));
 
   /* ----------------------------------------------------------- controls */
 
-  app.get("/api/controls/interlock", auth(), asyncRoute(async (_req, res) => {
-    res.json(await repo.getInterlock(db));
+  app.get("/api/controls/interlock", auth(), asyncRoute(async (req, res) => {
+    res.json(await repo.getInterlock(req.db));
   }));
 
   app.post("/api/controls/interlock", auth(), adminOnly(), asyncRoute(async (req, res) => {
     const parsed = z.object({ killSwitch: z.boolean().optional(), circuitOpen: z.boolean().optional() }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
-    const interlock = await repo.setInterlock(db, parsed.data, req.user!.id);
-    await appendAudit(db, { actorUserId: req.user!.id, eventType: "safety_control_changed", decision: interlock.killSwitch || interlock.circuitOpen ? "STOP" : "ALLOW", reason: "interlock_updated", payload: interlock });
+    const interlock = await repo.setInterlock(req.db, parsed.data, req.user!.id);
+    await appendAudit(req.db, { actorUserId: req.user!.id, eventType: "safety_control_changed", decision: interlock.killSwitch || interlock.circuitOpen ? "STOP" : "ALLOW", reason: "interlock_updated", payload: interlock });
     return res.json(interlock);
   }));
 
@@ -791,7 +795,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
     }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
 
-    const task = await repo.getTaskForUser(db, parsed.data.taskId, req.user!.workspaceId);
+    const task = await repo.getTaskForUser(req.db, parsed.data.taskId, req.user!.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
 
     const proposal = quorumEngine.createProposal({
@@ -817,7 +821,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
     quorumEngine.adjudicateChiefJustice(proposal.proposalId);
     const result = quorumEngine.adjudicate(proposal.proposalId);
 
-    await appendAudit(db, {
+    await appendAudit(req.db, {
       taskId: task.id,
       actorUserId: req.user!.id,
       eventType: "quorum_consensus",
@@ -844,7 +848,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
     }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
 
-    const task = await repo.getTaskForUser(db, parsed.data.taskId, req.user!.workspaceId);
+    const task = await repo.getTaskForUser(req.db, parsed.data.taskId, req.user!.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
 
     const check = invariantEngine.checkInvariants({
@@ -890,7 +894,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
     }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "invalid_input", detail: parsed.error.message });
 
-    const task = await repo.getTaskForUser(db, parsed.data.taskId, req.user!.workspaceId);
+    const task = await repo.getTaskForUser(req.db, parsed.data.taskId, req.user!.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
 
     const capability = skill.metadata.requiredCapability;
@@ -916,7 +920,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
       grant.signature = signed.signature;
     }
 
-    const decision = await governanceService(db, env).authorize(grant);
+    const decision = await governanceService(req.db, env).authorize(grant);
     if (!decision.allowed || !decision.capabilityLease) {
       return res.status(decision.status === "STOP" ? 423 : 403).json({ error: decision.reason });
     }
@@ -936,7 +940,7 @@ export async function createApp(env: Env = ENV, dbPromise: Promise<Db> = getDb(e
       env.grantPublicKeyPem
     );
 
-    await appendAudit(db, {
+    await appendAudit(req.db, {
       taskId: task.id,
       actorUserId: req.user!.id,
       eventType: "skill_executed",

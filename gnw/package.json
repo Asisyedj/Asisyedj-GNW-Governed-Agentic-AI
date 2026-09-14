@@ -19,6 +19,8 @@
     "test": "vitest run",
     "test:council-python": "python3 -m unittest discover -s tools/council_reference -p 'test_*.py' -v",
     "gnw:verify": "tsx scripts/gnw-verify.ts",
+    "verify:sinks": "node scripts/validate-external-sinks.mjs",
+    "verify:postgres-rls": "tsx scripts/validate-postgres-rls.ts",
     "verify:100": "node scripts/validate-100-evidence.mjs",
     "package:zip": "node scripts/package-distribution.mjs",
     "production:gate": "bash scripts/production-gate.sh"

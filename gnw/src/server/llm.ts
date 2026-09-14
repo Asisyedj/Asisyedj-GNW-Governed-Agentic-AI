@@ -1,8 +1,8 @@
 import { ENV, type Env } from "./env.js";
 import type { Db } from "./db/index.js";
 import type { CapabilityLease } from "./capability.js";
-import { executeExternal } from "./execution.js";
-import { governedFetch } from "./security.js";
+import { executeFencedExternal } from "./execution.js";
+import { governedFetch, sha256 } from "./security.js";
 
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 export type LlmResult = { text: string; mode: "live" | "offline"; model: string; usage?: { promptTokens?: number; completionTokens?: number } };
@@ -19,23 +19,30 @@ export async function invokeLLM(input: { messages: ChatMessage[]; maxTokens?: nu
   }
 
   if (!input.db || input.taskId === undefined || input.actorUserId === undefined || !input.actionDigest || !input.capabilityLease) throw new Error("llm_capability_lease_required");
-  return executeExternal({
+  const tenant = input.capabilityLease.tenant;
+  const requestDigest = sha256(JSON.stringify({ model: env.llmModel, messages: input.messages, maxTokens: input.maxTokens ?? 1200, temperature: input.temperature ?? 0.2 }));
+  const effectKey = `llm:${tenant}:${input.taskId}:${requestDigest}`;
+  const idempotencyKey = sha256(`GNW-LLM-IDEMPOTENCY-V1|${tenant}|${input.taskId}|${input.actionDigest}|${requestDigest}`);
+  const fenced = await executeFencedExternal({
     db: input.db,
     env,
     taskId: input.taskId,
     actorUserId: input.actorUserId,
+    tenant,
     eventType: "llm_provider",
     actionDigest: input.actionDigest,
     capabilityLease: input.capabilityLease,
     capability: "llm.chat",
-    destination: env.llmBaseUrl,
-    effect: async () => {
+    provider: env.llmModel,
+    effectKey,
+    idempotencyKey,
+    effect: async (fenceToken, providerIdempotencyKey, generation) => {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), env.llmTimeoutMs);
       try {
         const response = await governedFetch(`${env.llmBaseUrl}/chat/completions`, {
           method: "POST",
-          headers: { "content-type": "application/json", authorization: `Bearer ${env.llmApiKey}` },
+          headers: { "content-type": "application/json", authorization: `Bearer ${env.llmApiKey}`, "idempotency-key": providerIdempotencyKey, "x-gnw-fence-generation": String(generation), "x-gnw-fence-token": fenceToken },
           body: JSON.stringify({
             model: env.llmModel,
             messages: input.messages,
@@ -59,17 +66,17 @@ export async function invokeLLM(input: { messages: ChatMessage[]; maxTokens?: nu
         const content = payload.choices?.[0]?.message?.content;
         const text = typeof content === "string" ? content : Array.isArray(content) ? content.map(part => part?.text ?? "").join("\n") : "";
         if (!text.trim()) throw new Error("llm_empty_response");
-        return {
-          text,
-          mode: "live" as const,
-          model: env.llmModel,
-          usage: { promptTokens: payload.usage?.prompt_tokens, completionTokens: payload.usage?.completion_tokens },
-        };
+        if (env.llmProviderIdempotencyRequired && response.headers.get("x-gnw-idempotency-key") !== providerIdempotencyKey) throw new Error("llm_idempotency_contract_not_confirmed");
+        if (env.llmProviderIdempotencyRequired && response.headers.get("x-gnw-fence-token") !== fenceToken) throw new Error("llm_fence_contract_not_confirmed");
+        const result = { text, mode: "live" as const, model: env.llmModel, usage: { promptTokens: payload.usage?.prompt_tokens, completionTokens: payload.usage?.completion_tokens } };
+        return { result, responseDigest: sha256(raw) };
       } finally {
         clearTimeout(timer);
       }
     },
   });
+  if (fenced.status !== "COMPLETED" || !fenced.result) throw new Error("llm_effect_pending_reconciliation");
+  return fenced.result;
 }
 
 function offlineResponse(messages: ChatMessage[]) {

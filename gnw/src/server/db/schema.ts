@@ -8,7 +8,7 @@ export function schemaStatements(dialect: Dialect): string[] {
   const pk = dialect === "postgres" ? "SERIAL PRIMARY KEY" : "INTEGER PRIMARY KEY AUTOINCREMENT";
   const ts = dialect === "postgres" ? "BIGINT" : "INTEGER";
 
-  return [
+  const statements = [
     `CREATE TABLE IF NOT EXISTS users (
       id ${pk},
       email TEXT NOT NULL UNIQUE,
@@ -243,6 +243,7 @@ export function schemaStatements(dialect: Dialect): string[] {
       id ${pk},
       user_id INTEGER,
       task_id INTEGER,
+      tenant_key TEXT,
       title TEXT NOT NULL,
       body TEXT NOT NULL,
       channel TEXT NOT NULL,
@@ -267,4 +268,50 @@ export function schemaStatements(dialect: Dialect): string[] {
     )`,
     `CREATE INDEX IF NOT EXISTS ix_login_attempts ON login_attempts (email, created_at)`,
   ];
+  if (dialect === "postgres") {
+    statements.push(
+      `CREATE OR REPLACE FUNCTION gnw_current_tenant() RETURNS TEXT LANGUAGE SQL STABLE AS $$ SELECT NULLIF(current_setting('gnw.tenant_key', true), '') $$`,
+      `ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE workspaces FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE tasks ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE tasks FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE messages ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE messages FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE agent_runs ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE agent_runs FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE approvals ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE approvals FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE capability_leases ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE capability_leases FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE effect_fences ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE effect_fences FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE video_jobs ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE video_jobs FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE artifacts ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE artifacts FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE notifications ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE notifications FORCE ROW LEVEL SECURITY`,
+      `DROP POLICY IF EXISTS gnw_workspaces_tenant ON workspaces`,
+      `CREATE POLICY gnw_workspaces_tenant ON workspaces USING (tenant_key = gnw_current_tenant()) WITH CHECK (tenant_key = gnw_current_tenant())`,
+      `DROP POLICY IF EXISTS gnw_tasks_tenant ON tasks`,
+      `CREATE POLICY gnw_tasks_tenant ON tasks USING (EXISTS (SELECT 1 FROM workspaces w WHERE w.id = tasks.workspace_id AND w.tenant_key = gnw_current_tenant())) WITH CHECK (EXISTS (SELECT 1 FROM workspaces w WHERE w.id = tasks.workspace_id AND w.tenant_key = gnw_current_tenant()))`,
+      `DROP POLICY IF EXISTS gnw_messages_tenant ON messages`,
+      `CREATE POLICY gnw_messages_tenant ON messages USING (EXISTS (SELECT 1 FROM tasks t WHERE t.id = messages.task_id)) WITH CHECK (EXISTS (SELECT 1 FROM tasks t WHERE t.id = messages.task_id))`,
+      `DROP POLICY IF EXISTS gnw_agent_runs_tenant ON agent_runs`,
+      `CREATE POLICY gnw_agent_runs_tenant ON agent_runs USING (EXISTS (SELECT 1 FROM tasks t WHERE t.id = agent_runs.task_id)) WITH CHECK (EXISTS (SELECT 1 FROM tasks t WHERE t.id = agent_runs.task_id))`,
+      `DROP POLICY IF EXISTS gnw_approvals_tenant ON approvals`,
+      `CREATE POLICY gnw_approvals_tenant ON approvals USING (EXISTS (SELECT 1 FROM tasks t WHERE t.id = approvals.task_id)) WITH CHECK (EXISTS (SELECT 1 FROM tasks t WHERE t.id = approvals.task_id))`,
+      `DROP POLICY IF EXISTS gnw_leases_tenant ON capability_leases`,
+      `CREATE POLICY gnw_leases_tenant ON capability_leases USING (tenant = gnw_current_tenant()) WITH CHECK (tenant = gnw_current_tenant())`,
+      `DROP POLICY IF EXISTS gnw_effect_fences_tenant ON effect_fences`,
+      `CREATE POLICY gnw_effect_fences_tenant ON effect_fences USING (tenant = gnw_current_tenant()) WITH CHECK (tenant = gnw_current_tenant())`,
+      `DROP POLICY IF EXISTS gnw_video_jobs_tenant ON video_jobs`,
+      `CREATE POLICY gnw_video_jobs_tenant ON video_jobs USING (EXISTS (SELECT 1 FROM tasks t WHERE t.id = video_jobs.task_id)) WITH CHECK (EXISTS (SELECT 1 FROM tasks t WHERE t.id = video_jobs.task_id))`,
+      `DROP POLICY IF EXISTS gnw_artifacts_tenant ON artifacts`,
+      `CREATE POLICY gnw_artifacts_tenant ON artifacts USING (EXISTS (SELECT 1 FROM tasks t WHERE t.id = artifacts.task_id)) WITH CHECK (EXISTS (SELECT 1 FROM tasks t WHERE t.id = artifacts.task_id))`,
+      `DROP POLICY IF EXISTS gnw_notifications_tenant ON notifications`,
+      `CREATE POLICY gnw_notifications_tenant ON notifications USING (tenant_key = gnw_current_tenant()) WITH CHECK (tenant_key = gnw_current_tenant())`,
+    );
+  }
+  return statements;
 }

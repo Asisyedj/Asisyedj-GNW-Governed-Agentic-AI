@@ -180,10 +180,13 @@ export async function completeVideoJob(db: Db, user: SessionUser, jobId: number,
   const digest = sha256(manifest);
   const storageDecision = await authorizeArtifactStorage(db, user, job.task_id, task.classification, digest, env);
   if (!storageDecision.allowed || !storageDecision.capabilityLease) throw new ExecutionDenied(storageDecision.reason || "storage_capability_denied", storageDecision.status === "STOP");
-  const stored = await executeExternal({
-    db, env, taskId: job.task_id, actorUserId: user.id, eventType: "artifact_storage", actionDigest: storageDecision.actionDigest, capabilityLease: storageDecision.capabilityLease, capability: "artifact.storage",
-    effect: () => storagePut(`tasks/${job.task_id}/video/${jobId}/${digest}.json`, manifest, "application/json", env),
+  const storageKey = `tasks/${job.task_id}/video/${jobId}/${digest}.json`;
+  const fencedStorage = await executeFencedExternal({
+    db, env, taskId: job.task_id, actorUserId: user.id, tenant: user.tenantKey, eventType: "artifact_storage", actionDigest: storageDecision.actionDigest, capabilityLease: storageDecision.capabilityLease, capability: "artifact.storage", provider: env.storageDriver, effectKey: `artifact:${user.tenantKey}:${storageKey}`, idempotencyKey: sha256(`GNW-ARTIFACT-IDEMPOTENCY-V1|${user.tenantKey}|${storageKey}|${digest}`),
+    effect: async () => ({ result: await storagePut(storageKey, manifest, "application/json", env), providerEffectId: storageKey, responseDigest: digest }),
   });
+  if (fencedStorage.status !== "COMPLETED" || !fencedStorage.result) throw new ExecutionDenied("artifact_storage_pending_reconciliation");
+  const stored = fencedStorage.result;
   await repo.createArtifact(db, {
     taskId: job.task_id,
     videoJobId: jobId,
