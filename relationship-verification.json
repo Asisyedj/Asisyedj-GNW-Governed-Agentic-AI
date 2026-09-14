@@ -1,0 +1,63 @@
+{
+  "schema": "GNW.RelationshipVerification.v1",
+  "verification_status": "SOURCE_RELATIONSHIPS_VERIFIED; RELEASE_CHAIN_INCOMPLETE",
+  "source_commit": "e0e3c415314044e62ca451461462d22a6aaa9aa9",
+  "relationships": [
+    {
+      "from": "outer_source_bundle",
+      "relation": "CONTAINS",
+      "to": "embedded_frozen_archive",
+      "evidence": "Supplied remediation bundle layout and independent SHA-256 records",
+      "status": "VERIFIED"
+    },
+    {
+      "from": "embedded_frozen_archive",
+      "relation": "REPRESENTS",
+      "to": "source_tree",
+      "evidence": "Frozen archive extraction/inventory records; exact archive and tree identities remain separate",
+      "status": "DOCUMENTED_RELATIONSHIP; REPRODUCTION REQUIRED"
+    },
+    {
+      "from": "source_tree",
+      "relation": "AT_COMMIT",
+      "to": "git_commit",
+      "evidence": "GitHub ref lookup and Git tree lookup",
+      "status": "VERIFIED"
+    },
+    {
+      "from": "package_lock",
+      "relation": "PART_OF",
+      "to": "source_tree",
+      "evidence": "Repository path gnw/package-lock.json at verified commit",
+      "status": "VERIFIED"
+    },
+    {
+      "from": "sbom",
+      "relation": "DESCRIBES",
+      "to": "release_artifact",
+      "evidence": "No SBOM supplied at this commit",
+      "status": "UNPROVEN"
+    },
+    {
+      "from": "provenance",
+      "relation": "ATTESTS",
+      "to": "release_artifact",
+      "evidence": "No signed provenance supplied at this commit",
+      "status": "UNPROVEN"
+    }
+  ],
+  "hash_difference_explanation": {
+    "outer_source_bundle_sha256": "68162c182cc411f5449811c156beda560bf59272ae2ec2529d28d1381ef077de",
+    "embedded_frozen_archive_sha256": "446cb463dd07092be870a1a3456c50c1efc6d3414a088480af89e74c470fa6d1",
+    "expected_relation": "The outer ZIP and embedded ZIP are different byte objects and must not be expected to share a digest.",
+    "status": "NOT_A_HASH_EQUALITY_REQUIREMENT"
+  },
+  "unresolved_items": [
+    "Canonical consumer-facing release artifact is not defined.",
+    "SBOM subject binding is unavailable.",
+    "Signed provenance is unavailable.",
+    "Container image digest is unavailable.",
+    "Independent source-to-artifact reproduction is still required."
+  ],
+  "release_status": "PRODUCTION_RELEASE_DENIED"
+}

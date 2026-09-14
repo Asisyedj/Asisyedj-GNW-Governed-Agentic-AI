@@ -1,0 +1,54 @@
+{
+  "schema": "GNW.ReleaseManifest.v1",
+  "release_id": "gnw-governed-agent-4.0.0-remediation-phase1",
+  "repository": "Asisyedj/Asisyedj-GNW-Governed-Agentic-AI",
+  "source_branch": "audit/source-import-2026-09-14",
+  "remediation_branch": "remediation/provenance-and-reproducibility-2026-09-14",
+  "source_commit": "e0e3c415314044e62ca451461462d22a6aaa9aa9",
+  "source_tree": "2917faa6d994365ca29a708484968ee13009c1c2",
+  "objects": {
+    "outer_source_bundle": {
+      "media_type": "application/zip",
+      "sha256": "68162c182cc411f5449811c156beda560bf59272ae2ec2529d28d1381ef077de"
+    },
+    "embedded_frozen_archive": {
+      "media_type": "application/zip",
+      "sha256": "446cb463dd07092be870a1a3456c50c1efc6d3414a088480af89e74c470fa6d1"
+    },
+    "package_lock": {
+      "path": "gnw/package-lock.json",
+      "sha256": "d652675f2651efcec306e02ccffa5725863d138f593448bb7394018a5fd96e5e"
+    },
+    "sbom": {
+      "sha256": null,
+      "status": "UNAVAILABLE"
+    },
+    "build_artifact": {
+      "sha256": null,
+      "status": "UNAVAILABLE"
+    },
+    "container_image": {
+      "sha256": null,
+      "status": "UNAVAILABLE"
+    },
+    "provenance": {
+      "sha256": null,
+      "status": "UNAVAILABLE"
+    }
+  },
+  "relationships_file": "relationship-verification.json",
+  "verification": {
+    "source_identity": "PASS_FOR_REPOSITORY_SOURCE_STATE",
+    "archive_relationships": "PASS_WITH_UNRESOLVED_RELEASE_ARTIFACTS",
+    "package_lock": "PASS",
+    "sbom": "UNPROVEN",
+    "build_artifact": "UNPROVEN",
+    "provenance": "UNPROVEN",
+    "independent_review": "BLOCKED",
+    "production_gate": "DENIED"
+  },
+  "PRODUCTION_RELEASE": "DENIED",
+  "INTERNATIONAL_CERTIFICATION": "NOT_CLAIMED",
+  "generated_by": "GNW Phase 1 source identity remediation",
+  "generated_from_commit": "e0e3c415314044e62ca451461462d22a6aaa9aa9"
+}

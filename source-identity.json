@@ -1,0 +1,59 @@
+{
+  "schema": "GNW.SourceIdentity.v1",
+  "status": "VERIFIED_FOR_SOURCE_IMPORT_ONLY",
+  "repository": {
+    "name": "Asisyedj/Asisyedj-GNW-Governed-Agentic-AI",
+    "url": "https://github.com/Asisyedj/Asisyedj-GNW-Governed-Agentic-AI",
+    "source_branch": "audit/source-import-2026-09-14",
+    "remediation_branch": "remediation/provenance-and-reproducibility-2026-09-14",
+    "commit_sha": "e0e3c415314044e62ca451461462d22a6aaa9aa9",
+    "tree_sha": "2917faa6d994365ca29a708484968ee13009c1c2",
+    "git_provenance": "VERIFIED_BY_GITHUB_REF_LOOKUP"
+  },
+  "objects": {
+    "outer_source_bundle": {
+      "name": "GNW-REMEDIATED-SOURCE-BUNDLE-2026-09-13.zip",
+      "media_type": "application/zip",
+      "sha256": "68162c182cc411f5449811c156beda560bf59272ae2ec2529d28d1381ef077de",
+      "identity_status": "VERIFIED_FROM_SUPPLIED_ARTIFACT"
+    },
+    "embedded_frozen_archive": {
+      "name": "GNW-AUDITED-PROTECTED.zip",
+      "media_type": "application/zip",
+      "sha256": "446cb463dd07092be870a1a3456c50c1efc6d3414a088480af89e74c470fa6d1",
+      "identity_status": "VERIFIED_FROM_SUPPLIED_ARTIFACT"
+    },
+    "source_tree": {
+      "name": "Git tree at commit",
+      "media_type": "application/vnd.git.tree",
+      "sha256": null,
+      "git_tree_sha": "2917faa6d994365ca29a708484968ee13009c1c2",
+      "identity_status": "VERIFIED"
+    },
+    "package_lock": {
+      "path": "gnw/package-lock.json",
+      "media_type": "application/json",
+      "sha256": "d652675f2651efcec306e02ccffa5725863d138f593448bb7394018a5fd96e5e",
+      "identity_status": "VERIFIED_FROM_REPOSITORY"
+    },
+    "sbom": {
+      "identity_status": "UNAVAILABLE",
+      "sha256": null
+    },
+    "build_artifact": {
+      "identity_status": "UNAVAILABLE_IN_THIS_COMMIT",
+      "sha256": null
+    },
+    "container_image": {
+      "identity_status": "UNAVAILABLE",
+      "sha256": null
+    },
+    "provenance_attestation": {
+      "identity_status": "UNAVAILABLE",
+      "sha256": null
+    }
+  },
+  "release_status": "PRODUCTION_RELEASE_DENIED",
+  "certification_status": "NOT_CERTIFIED",
+  "generated_from_commit": "e0e3c415314044e62ca451461462d22a6aaa9aa9"
+}
