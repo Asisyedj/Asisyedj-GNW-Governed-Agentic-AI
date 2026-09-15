@@ -1,5 +1,5 @@
 version: 1
-status: INCOMPLETE
+status: PARTIAL_VERIFIED_BATCH_1
 subjects:
   - subject_id: IRS-001
     attack: "NOT_EXECUTED"
@@ -392,18 +392,18 @@ subjects:
     reviewer: "UNASSIGNED"
     review_timestamp: ""
   - subject_id: IRS-031
-    attack: "NOT_EXECUTED"
-    precondition: "NOT_EXECUTED"
+    attack: "Flip signed grant material after Ed25519 signing"
+    precondition: "security-v3.test.ts grant signing and verification fixture"
     expected: "SEE_MATRIX"
-    actual: "UNPROVEN"
+    actual: "Tampered normalizedParameters signature verification returned false"
     side_effect: "NONE_OBSERVED"
-    audit_evidence: "MISSING"
-    verdict: UNPROVEN
-    root_cause: "Execution evidence not yet collected"
-    fix: "SEE_DEEP_REMEDIATION"
-    regression: "NOT_EXECUTED"
-    reviewer: "UNASSIGNED"
-    review_timestamp: ""
+    audit_evidence: "/home/ubuntu/gnw-phase5-evidence-batch1-vitest.log; tests/security-v3.test.ts:17-23"
+    verdict: PASS
+    root_cause: "Signature binds canonical grant material"
+    fix: "Ed25519 grant signature verification"
+    regression: PASS
+    reviewer: "Automated local Phase 5 evidence runner"
+    review_timestamp: "2026-09-15T09:49:25Z"
   - subject_id: IRS-032
     attack: "NOT_EXECUTED"
     precondition: "NOT_EXECUTED"
@@ -483,18 +483,18 @@ subjects:
     reviewer: "UNASSIGNED"
     review_timestamp: ""
   - subject_id: IRS-038
-    attack: "NOT_EXECUTED"
-    precondition: "NOT_EXECUTED"
+    attack: "Substitute actor or tenant in capability execution envelope"
+    precondition: "phase3-security-boundaries.test.ts capability binding fixture"
     expected: "SEE_MATRIX"
-    actual: "UNPROVEN"
+    actual: "Central execution gate rejected capability_binding and remote executor rejected executor_authorization_binding; effect did not run"
     side_effect: "NONE_OBSERVED"
-    audit_evidence: "MISSING"
-    verdict: UNPROVEN
-    root_cause: "Execution evidence not yet collected"
-    fix: "SEE_DEEP_REMEDIATION"
-    regression: "NOT_EXECUTED"
-    reviewer: "UNASSIGNED"
-    review_timestamp: ""
+    audit_evidence: "/home/ubuntu/gnw-phase5-evidence-batch1-vitest.log; tests/phase3-security-boundaries.test.ts:85-145"
+    verdict: PASS
+    root_cause: "Capability lease is bound to actor, tenant, task, action and capability"
+    fix: "Executor-independent binding enforcement"
+    regression: PASS
+    reviewer: "Automated local Phase 5 evidence runner"
+    review_timestamp: "2026-09-15T09:49:25Z"
   - subject_id: IRS-039
     attack: "NOT_EXECUTED"
     precondition: "NOT_EXECUTED"
@@ -509,18 +509,18 @@ subjects:
     reviewer: "UNASSIGNED"
     review_timestamp: ""
   - subject_id: IRS-040
-    attack: "NOT_EXECUTED"
-    precondition: "NOT_EXECUTED"
+    attack: "Activate kill switch after lease admission and replay stale lease"
+    precondition: "phase3-security-boundaries.test.ts durable interlock fixture"
     expected: "SEE_MATRIX"
-    actual: "UNPROVEN"
+    actual: "Interlock generation advanced from 0 to 2; stale lease was rejected with stale_interlock_generation; effect count remained zero"
     side_effect: "NONE_OBSERVED"
-    audit_evidence: "MISSING"
-    verdict: UNPROVEN
-    root_cause: "Execution evidence not yet collected"
-    fix: "SEE_DEEP_REMEDIATION"
-    regression: "NOT_EXECUTED"
-    reviewer: "UNASSIGNED"
-    review_timestamp: ""
+    audit_evidence: "/home/ubuntu/gnw-phase5-evidence-batch1-vitest.log; tests/phase3-security-boundaries.test.ts:48-82"
+    verdict: PASS
+    root_cause: "Final interlock generation check fences stale authority immediately before effect"
+    fix: "Durable generation-based final interlock"
+    regression: PASS
+    reviewer: "Automated local Phase 5 evidence runner"
+    review_timestamp: "2026-09-15T09:49:25Z"
   - subject_id: IRS-041
     attack: "NOT_EXECUTED"
     precondition: "NOT_EXECUTED"
@@ -782,57 +782,57 @@ subjects:
     reviewer: "UNASSIGNED"
     review_timestamp: ""
   - subject_id: IRS-061
-    attack: "NOT_EXECUTED"
-    precondition: "NOT_EXECUTED"
+    attack: "Request an unapproved external destination"
+    precondition: "egress-interlock.test.ts allowlist fixture"
     expected: "SEE_MATRIX"
-    actual: "UNPROVEN"
+    actual: "Unapproved destination was rejected with egress_destination_not_allowlisted"
     side_effect: "NONE_OBSERVED"
-    audit_evidence: "MISSING"
-    verdict: UNPROVEN
-    root_cause: "Execution evidence not yet collected"
-    fix: "SEE_DEEP_REMEDIATION"
-    regression: "NOT_EXECUTED"
-    reviewer: "UNASSIGNED"
-    review_timestamp: ""
+    audit_evidence: "/home/ubuntu/gnw-phase5-evidence-batch1-vitest.log; tests/egress-interlock.test.ts:10-16"
+    verdict: PASS
+    root_cause: "External destinations require explicit allowlisting"
+    fix: "Default-deny egress allowlist"
+    regression: PASS
+    reviewer: "Automated local Phase 5 evidence runner"
+    review_timestamp: "2026-09-15T09:49:25Z"
   - subject_id: IRS-062
-    attack: "NOT_EXECUTED"
-    precondition: "NOT_EXECUTED"
+    attack: "Use plain HTTP or URL credentials for an external sink"
+    precondition: "egress-interlock.test.ts HTTPS fixture"
     expected: "SEE_MATRIX"
-    actual: "UNPROVEN"
+    actual: "HTTP was rejected with https_required and URL credentials with url_credentials_forbidden"
     side_effect: "NONE_OBSERVED"
-    audit_evidence: "MISSING"
-    verdict: UNPROVEN
-    root_cause: "Execution evidence not yet collected"
-    fix: "SEE_DEEP_REMEDIATION"
-    regression: "NOT_EXECUTED"
-    reviewer: "UNASSIGNED"
-    review_timestamp: ""
+    audit_evidence: "/home/ubuntu/gnw-phase5-evidence-batch1-vitest.log; tests/egress-interlock.test.ts:5-8"
+    verdict: PASS
+    root_cause: "External sink URLs require HTTPS and cannot contain credentials"
+    fix: "HTTPS and URL-credential validation"
+    regression: PASS
+    reviewer: "Automated local Phase 5 evidence runner"
+    review_timestamp: "2026-09-15T09:49:25Z"
   - subject_id: IRS-063
-    attack: "NOT_EXECUTED"
-    precondition: "NOT_EXECUTED"
+    attack: "Target localhost, loopback or RFC1918 private address"
+    precondition: "egress-interlock.test.ts private destination fixture"
     expected: "SEE_MATRIX"
-    actual: "UNPROVEN"
+    actual: "localhost, 127.0.0.1 and 10.0.0.1 were rejected with private_destination_blocked"
     side_effect: "NONE_OBSERVED"
-    audit_evidence: "MISSING"
-    verdict: UNPROVEN
-    root_cause: "Execution evidence not yet collected"
-    fix: "SEE_DEEP_REMEDIATION"
-    regression: "NOT_EXECUTED"
-    reviewer: "UNASSIGNED"
-    review_timestamp: ""
+    audit_evidence: "/home/ubuntu/gnw-phase5-evidence-batch1-vitest.log; tests/egress-interlock.test.ts:10-14"
+    verdict: PASS
+    root_cause: "Private and local destinations are denied before egress"
+    fix: "Private/local destination blocking"
+    regression: PASS
+    reviewer: "Automated local Phase 5 evidence runner"
+    review_timestamp: "2026-09-15T09:49:25Z"
   - subject_id: IRS-064
-    attack: "NOT_EXECUTED"
-    precondition: "NOT_EXECUTED"
+    attack: "Target cloud metadata IP or metadata hostname"
+    precondition: "egress-interlock.test.ts metadata destination fixture"
     expected: "SEE_MATRIX"
-    actual: "UNPROVEN"
+    actual: "169.254.169.254 and metadata.google.internal were rejected with private_destination_blocked"
     side_effect: "NONE_OBSERVED"
-    audit_evidence: "MISSING"
-    verdict: UNPROVEN
-    root_cause: "Execution evidence not yet collected"
-    fix: "SEE_DEEP_REMEDIATION"
-    regression: "NOT_EXECUTED"
-    reviewer: "UNASSIGNED"
-    review_timestamp: ""
+    audit_evidence: "/home/ubuntu/gnw-phase5-evidence-batch1-vitest.log; tests/egress-interlock.test.ts:10-14"
+    verdict: PASS
+    root_cause: "Metadata destinations are treated as private/local and denied"
+    fix: "Cloud metadata endpoint blocking"
+    regression: PASS
+    reviewer: "Automated local Phase 5 evidence runner"
+    review_timestamp: "2026-09-15T09:49:25Z"
   - subject_id: IRS-065
     attack: "NOT_EXECUTED"
     precondition: "NOT_EXECUTED"
