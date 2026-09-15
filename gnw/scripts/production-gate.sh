@@ -31,7 +31,9 @@ NODE_ENV=production npm run --silent typecheck >/dev/null
 
 echo "[7/10] container/staging gate"
 command -v docker >/dev/null || { echo "docker is required for the staging gate" >&2; exit 2; }
-docker build -t gnw-governed-agent:4.0.0 .
+DOCKER_BUILD_NETWORK="${DOCKER_BUILD_NETWORK:-default}"
+echo "Docker build network: ${DOCKER_BUILD_NETWORK}"
+docker build --network "${DOCKER_BUILD_NETWORK}" -t gnw-governed-agent:4.0.0 .
 
 echo "[8/10] 100-case evidence ledger gate"
 node scripts/validate-100-evidence.mjs
