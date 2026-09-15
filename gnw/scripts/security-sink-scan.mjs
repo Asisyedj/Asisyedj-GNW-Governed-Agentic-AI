@@ -25,11 +25,16 @@ if (unsafeNetworkFiles.length || missingGovernedImport.length) {
   process.exit(2);
 }
 
-const executionCallers = files.filter(file => /executeExternal\s*\(/.test(source.get(file)));
+// Both the legacy central boundary and the durable provider-fencing boundary
+// are valid execution gates.  A fenced call is deliberately not required to
+// contain the shorter legacy token as a substring: the production gate must
+// recognize the actual exported helper name.
+const executionCallers = files.filter(file => /execute(?:Fenced)?External\s*\(/.test(source.get(file)));
 const externalModules = ["llm.ts", "video.ts", "notify.ts", "storage.ts"].map(name => path.join(root, name));
 const missingExternalBoundary = externalModules.filter(file => {
   const text = source.get(file) ?? "";
-  return !text.includes("governedFetch") || (path.basename(file) !== "storage.ts" && !text.includes("executeExternal"));
+  const hasExecutionBoundary = text.includes("executeExternal") || text.includes("executeFencedExternal");
+  return !text.includes("governedFetch") || (path.basename(file) !== "storage.ts" && !hasExecutionBoundary);
 });
 if (missingExternalBoundary.length) {
   console.error(`FAIL: expected external modules lack both governedFetch and executeExternal: ${missingExternalBoundary.join(",")}`);
