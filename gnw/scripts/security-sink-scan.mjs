@@ -25,11 +25,12 @@ if (unsafeNetworkFiles.length || missingGovernedImport.length) {
   process.exit(2);
 }
 
-const executionCallers = files.filter(file => /executeExternal\s*\(/.test(source.get(file)));
+const executionCallers = files.filter(file => /(?:executeExternal|executeFencedExternal)\s*\(/.test(source.get(file)));
 const externalModules = ["llm.ts", "video.ts", "notify.ts", "storage.ts"].map(name => path.join(root, name));
 const missingExternalBoundary = externalModules.filter(file => {
   const text = source.get(file) ?? "";
-  return !text.includes("governedFetch") || (path.basename(file) !== "storage.ts" && !text.includes("executeExternal"));
+  const hasEffectBoundary = text.includes("executeExternal") || text.includes("executeFencedExternal");
+  return !text.includes("governedFetch") || (path.basename(file) !== "storage.ts" && !hasEffectBoundary);
 });
 if (missingExternalBoundary.length) {
   console.error(`FAIL: expected external modules lack both governedFetch and executeExternal: ${missingExternalBoundary.join(",")}`);
