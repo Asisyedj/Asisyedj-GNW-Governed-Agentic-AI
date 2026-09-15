@@ -1,0 +1,62 @@
+name: GNW Phase 5 Sink Contract Evidence
+
+on:
+  push:
+    branches:
+      - remediation/phase5-sink-contracts-2026-09-15
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-and-runtime-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: gnw
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify source identity
+        run: |
+          test "$GITHUB_SHA" = "$(git rev-parse HEAD)"
+          git status --porcelain
+          git rev-parse HEAD^{tree}
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: gnw/package-lock.json
+      - name: Clean install
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Full tests
+        run: npm test
+      - name: Production build
+        run: npm run build
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+      - name: SBOM
+        run: npm sbom --sbom-format cyclonedx > phase5-sbom.json
+      - name: Security sink scan
+        run: node scripts/security-sink-scan.mjs
+      - name: External sink contract scan
+        run: node scripts/validate-external-sinks.mjs > phase5-external-sinks.json
+      - name: OpenClaw smoke tests
+        run: python3 ../openclaw_portable/run_order_smoke_tests.py
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gnw-phase5-sink-contract-evidence-${{ github.sha }}
+          path: |
+            gnw/phase5-sbom.json
+            gnw/phase5-external-sinks.json
+            gnw/package-lock.json
+          if-no-files-found: warn
