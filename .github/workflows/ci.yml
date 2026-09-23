@@ -1,0 +1,89 @@
+name: GNW CI Quality Gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gnw-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify source, tests, build, and security contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Verify repository hygiene
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test ! -e .env
+          test ! -d node_modules
+          if find . -type f \( -name '*.pem' -o -name '*.key' -o -name '.env' \) -not -path './.git/*' | grep -q .; then
+            echo 'forbidden credential-like file found' >&2
+            exit 1
+          fi
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit and integration tests
+        run: npm test
+      - name: Static sink and policy checks
+        run: |
+          npm run verify:sinks
+          node scripts/validate-force-policy.mjs
+      - name: Production build
+        run: npm run build
+      - name: Generate local SBOM evidence
+        run: node scripts/generate-local-sbom.mjs
+      - name: Upload non-authorizing build evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: gnw-ci-evidence-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            dist/**
+            evidence/local/phase15-sbom-local.json
+
+  container:
+    name: Container build smoke gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    needs: verify
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+      - name: Build container without publishing
+        run: docker build --pull --tag gnw-governed-agent:ci-${{ github.sha }} .
+      - name: Verify runtime user and healthcheck metadata
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(docker inspect --format='{{.Config.User}}' gnw-governed-agent:ci-${{ github.sha }})" = node
+          docker inspect --format='{{json .Config.Healthcheck}}' gnw-governed-agent:ci-${{ github.sha }} | grep -q '/health'
+
+# This workflow is evidence-producing only. It must not be interpreted as
+# production authorization; controlled staging, independent review, signing,
+# recovery, and certification gates remain mandatory.

@@ -179,13 +179,13 @@ function domainPolicy(env: Env, requested: string[] | undefined) {
   if (requestedDomains.length === 0) return configured;
   const allowed = new Set(configured);
   const effective = requestedDomains.filter(domain => allowed.has(domain));
-  if (requestedDomains.some(domain => !allowed.has(domain))) throw new Error("requested_domain_outside_gnw_allowlist");
+  if (requestedDomains.some(domain => !allowed.has(domain))) throw new Error("requested_domain_outside_gnw_allowlist: requested domain is outside GNW allowlist");
   return effective;
 }
 
 function validateVectorStores(ids: string[] | undefined) {
   const values = [...new Set((ids ?? []).map(v => v.trim()).filter(Boolean))];
-  if (values.length > 2) throw new Error("deep_research_supports_at_most_two_vector_stores");
+  if (values.length > 2) throw new Error("deep_research_supports_at_most_two_vector_stores: at most two vector stores are supported");
   if (values.some(v => !/^vs_[A-Za-z0-9_-]+$/.test(v))) throw new Error("invalid_vector_store_id");
   return values;
 }
@@ -438,22 +438,23 @@ export async function cancelDeepResearch(db: Db, user: SessionUser, taskId: numb
   const run = await repo.getDeepResearchRun(db, runId, taskId);
   if (!run) throw new Error("deep_research_run_not_found");
   if (!run.response_id) throw new Error("deep_research_response_not_available");
+  const responseId = run.response_id;
   if (!["queued", "in_progress"].includes(run.status)) {
-    return { runId, status: run.status, responseId: run.response_id, cancelled: false };
+    return { runId, status: run.status, responseId, cancelled: false };
   }
   if (!env.deepResearchApiKey) throw new Error("deep_research_provider_not_configured");
 
-  const digest = sha256(`cancel:${run.response_id}`);
-  const grant = authorizedGrant(user, taskId, "cancel_research", "deep.research.status", purpose, classification, digest, { stage: "cancel", runId, responseId: run.response_id }, 1, Math.min(100_000, env.maxProviderResponseBytes), env);
+  const digest = sha256(`cancel:${responseId}`);
+  const grant = authorizedGrant(user, taskId, "cancel_research", "deep.research.status", purpose, classification, digest, { stage: "cancel", runId, responseId }, 1, Math.min(100_000, env.maxProviderResponseBytes), env);
   const decision = await governanceService(db, env).authorize(grant);
-  await appendAudit(db, { taskId, actorUserId: user.id, eventType: "deep_research_cancel_admission", decision: decision.status, reason: decision.reason, payload: { runId, responseId: run.response_id } });
+  await appendAudit(db, { taskId, actorUserId: user.id, eventType: "deep_research_cancel_admission", decision: decision.status, reason: decision.reason, payload: { runId, responseId } });
   if (!decision.allowed || !decision.capabilityLease) throw new Error(decision.status === "STOP" ? "safety_interlock" : `deep_research_cancel_denied:${decision.reason}`);
 
   const result = await executeExternal({
     db, env, taskId, actorUserId: user.id, eventType: "deep_research_cancel", actionDigest: decision.actionDigest,
-    capabilityLease: decision.capabilityLease, capability: "deep.research.status", destination: `${env.deepResearchBaseUrl}/responses/${encodeURIComponent(run.response_id)}/cancel`,
+    capabilityLease: decision.capabilityLease, capability: "deep.research.status", destination: `${env.deepResearchBaseUrl}/responses/${encodeURIComponent(responseId)}/cancel`,
     effect: async () => {
-      const response = await governedFetch(`${env.deepResearchBaseUrl}/responses/${encodeURIComponent(run.response_id)}/cancel`, {
+      const response = await governedFetch(`${env.deepResearchBaseUrl}/responses/${encodeURIComponent(responseId)}/cancel`, {
         method: "POST",
         headers: { authorization: `Bearer ${env.deepResearchApiKey}` },
         redirect: "manual",
@@ -472,7 +473,7 @@ export async function cancelDeepResearch(db: Db, user: SessionUser, taskId: numb
     responseJson: JSON.stringify(payload),
     ...(status === "cancelled" ? { completedAt: Date.now() } : {}),
   });
-  await appendAudit(db, { taskId, actorUserId: user.id, eventType: "deep_research_cancelled", decision: "ALLOW", reason: status === "cancelled" ? "provider_cancelled" : "cancel_requested", payload: { runId, responseId: run.response_id, providerStatus: status } });
+  await appendAudit(db, { taskId, actorUserId: user.id, eventType: "deep_research_cancelled", decision: "ALLOW", reason: status === "cancelled" ? "provider_cancelled" : "cancel_requested", payload: { runId, responseId, providerStatus: status } });
   if (status === "cancelled") await repo.updateTaskStatus(db, taskId, "failed");
   return { runId, status: status === "cancelled" ? "cancelled" : "in_progress", responseId: run.response_id, cancelled: status === "cancelled" };
 }

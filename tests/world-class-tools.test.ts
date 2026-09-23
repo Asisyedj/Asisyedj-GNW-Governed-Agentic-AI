@@ -1,4 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createDb, migrate, type Db } from "../src/server/db/index.js";
 import { loadEnv } from "../src/server/env.js";
 import { issueCapabilityLease } from "../src/server/capability.js";
@@ -28,9 +31,11 @@ import {
 } from "../src/server/tools/code-intel.js";
 import { TaskSandbox } from "../src/server/sandbox/index.js";
 
+const testArtifactDir = mkdtempSync(join(tmpdir(), "gnw-world-class-tools-"));
+
 const env = loadEnv({
   DATABASE_URL: ":memory:",
-  ARTIFACT_DIR: "./test-artifacts",
+  ARTIFACT_DIR: testArtifactDir,
   ALLOW_SELF_REGISTRATION: "true",
   GNW_ALLOWED_EGRESS_HOSTS: "example.com",
 });
@@ -72,6 +77,10 @@ async function makeLease(db: Db, taskId: number, capability: string, actionDiges
 
 describe("World-Class Tools: Visual Browser, Git, Memory RAG, and Code Intelligence", () => {
   let db: Db;
+
+  afterAll(() => {
+    rmSync(testArtifactDir, { recursive: true, force: true });
+  });
 
   beforeEach(async () => {
     db = await createDb(":memory:");

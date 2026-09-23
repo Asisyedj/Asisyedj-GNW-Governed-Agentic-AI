@@ -253,9 +253,6 @@ export async function updateVideoJob(db: Db, jobId: number, values: Partial<{ st
   if (values.errorMessage !== undefined) { sets.push("error_message = ?"); params.push(values.errorMessage); }
   if (values.startedAt !== undefined) { sets.push("started_at = ?"); params.push(values.startedAt); }
   if (values.completedAt !== undefined) { sets.push("completed_at = ?"); params.push(values.completedAt); }
-  if (values.researchInstructions !== undefined) { sets.push("research_instructions = ?"); params.push(values.researchInstructions); }
-  if (values.toolPolicyJson !== undefined) { sets.push("tool_policy_json = ?"); params.push(values.toolPolicyJson); }
-  if (values.clarificationsJson !== undefined) { sets.push("clarifications_json = ?"); params.push(values.clarificationsJson); }
   if (!sets.length) return;
   sets.push("updated_at = ?");
   params.push(now(), jobId);

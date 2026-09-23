@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 const root = new URL('..', import.meta.url).pathname;
 const pkg = JSON.parse(fs.readFileSync(`${root}/package.json`, 'utf8'));
 const lock = JSON.parse(fs.readFileSync(`${root}/package-lock.json`, 'utf8'));
+fs.mkdirSync(`${root}/evidence/local`, { recursive: true });
 const components = Object.entries(lock.packages || {}).filter(([k]) => k && k !== '').map(([path, meta]) => ({
   type: 'library', name: path.replace(/^node_modules\//, ''), version: meta.version || 'unknown', scope: path.includes('node_modules/') ? 'required' : 'root'
 }));
