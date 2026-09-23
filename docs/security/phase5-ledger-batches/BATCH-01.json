@@ -1,0 +1,159 @@
+{
+  "batch_id": "BATCH-01",
+  "generated_at_utc": "2026-09-16T08:16:54+00:00",
+  "source_ledger": "gnw/docs/security/100-independent-review-evidence.yaml",
+  "fail_closed": true,
+  "subjects": [
+    {
+      "subject_id": "IRS-001",
+      "domain": "Governance Authority",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-001/raw-test.log",
+        "evidence/IRS-001/result.json",
+        "evidence/IRS-001/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-002",
+      "domain": "Governance Authority",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-002/raw-test.log",
+        "evidence/IRS-002/result.json",
+        "evidence/IRS-002/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-003",
+      "domain": "Governance Authority",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-003/raw-test.log",
+        "evidence/IRS-003/result.json",
+        "evidence/IRS-003/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-004",
+      "domain": "Governance Authority",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-004/raw-test.log",
+        "evidence/IRS-004/result.json",
+        "evidence/IRS-004/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-005",
+      "domain": "Governance Authority",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-005/raw-test.log",
+        "evidence/IRS-005/result.json",
+        "evidence/IRS-005/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-006",
+      "domain": "Governance Authority",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-006/raw-test.log",
+        "evidence/IRS-006/result.json",
+        "evidence/IRS-006/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-007",
+      "domain": "Governance Authority",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-007/raw-test.log",
+        "evidence/IRS-007/result.json",
+        "evidence/IRS-007/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-008",
+      "domain": "Governance Authority",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-008/raw-test.log",
+        "evidence/IRS-008/result.json",
+        "evidence/IRS-008/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-009",
+      "domain": "Governance Authority",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-009/raw-test.log",
+        "evidence/IRS-009/result.json",
+        "evidence/IRS-009/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-010",
+      "domain": "Governance Authority",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-010/raw-test.log",
+        "evidence/IRS-010/result.json",
+        "evidence/IRS-010/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    }
+  ],
+  "execution_order": "Run one subject at a time; stop the batch on FAIL or unexpected side effect."
+}

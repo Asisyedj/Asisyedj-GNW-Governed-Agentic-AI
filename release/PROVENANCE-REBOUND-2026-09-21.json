@@ -1,0 +1,12 @@
+{
+  "action": "release_manifest_provenance_rebind_and_force_policy_update",
+  "input_archive": "GNW-REBOUND-RELEASE-EVIDENCE-2026-09-21.zip",
+  "input_archive_sha256": "396e0a6b7e9e9a641d4d04de1267e5b5dea8c4a3a02cbc20da25fde345d745ae",
+  "source_tree_sha256_excluding_release_manifest": "f0a38bcc2f554f49213ca61b195343481015da43e4a4023a7d8c2889aae9e0d7",
+  "source_tree_file_count_excluding_release_manifest": 197,
+  "manifest": "release/RELEASE-EVIDENCE.json",
+  "production_ready": false,
+  "release_status": "BLOCKED",
+  "force_policy": "release/GNW-FORCE-GATE-POLICY-2026-09-21.json",
+  "executed_at": "2026-09-21T15:00:00Z"
+}

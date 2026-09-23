@@ -1,0 +1,39 @@
+{
+  "candidate": "gnw-governed-agent-4.0.0-remediation",
+  "gates": {
+    "accredited_certification": "BLOCKED",
+    "backup_restore_anti_resurrection": "BLOCKED",
+    "container_build": "BLOCKED",
+    "dependency_audit": "PASS",
+    "distributed_kill_switch": "BLOCKED",
+    "independent_review": "BLOCKED",
+    "irs_100_evidence": "BLOCKED",
+    "local_build": "PASS",
+    "local_clean_install": "PASS",
+    "local_tests": "PASS",
+    "local_typecheck": "PASS",
+    "secret_rotation": "BLOCKED",
+    "ssrf_dns_rebinding": "BLOCKED",
+    "supply_chain_signing": "BLOCKED",
+    "tls_postgres_multi_instance": "BLOCKED"
+  },
+  "note": "This manifest is fail-closed. Local passing checks do not authorize production or certification.",
+  "notes": "2026-09-21 audit reconciliation: force-fail-closed policy added; mandatory gates remain blocked/unproven. Source binding refers to the exact rebound input archive; final distribution is separately bound by detached manifest.",
+  "production_ready": false,
+  "provenance_rebound_at": "2026-09-21T15:00:00Z",
+  "provenance_rebound_by": "GNW closure audit execution",
+  "provenance_status": "REBOUND_TO_CURRENT_ARCHIVE",
+  "release_status": "BLOCKED",
+  "review": {
+    "organization": "UNASSIGNED",
+    "reviewer": "UNASSIGNED",
+    "signature": "MISSING",
+    "timestamp": ""
+  },
+  "schema": "GNW.ReleaseEvidence.v1",
+  "source_archive_name": "GNW-REBOUND-RELEASE-EVIDENCE-2026-09-21.zip",
+  "source_archive_sha256": "396e0a6b7e9e9a641d4d04de1267e5b5dea8c4a3a02cbc20da25fde345d745ae",
+  "source_tree_file_count": 197,
+  "source_tree_sha256": "f0a38bcc2f554f49213ca61b195343481015da43e4a4023a7d8c2889aae9e0d7",
+  "status": "BLOCKED"
+}

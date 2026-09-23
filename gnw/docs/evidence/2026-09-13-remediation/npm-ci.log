@@ -1,8 +1,0 @@
-npm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
-
-added 280 packages, and audited 281 packages in 2s
-
-61 packages are looking for funding
-  run `npm fund` for details
-
-found 0 vulnerabilities

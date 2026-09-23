@@ -1,0 +1,159 @@
+{
+  "batch_id": "BATCH-09",
+  "generated_at_utc": "2026-09-16T08:16:54+00:00",
+  "source_ledger": "gnw/docs/security/100-independent-review-evidence.yaml",
+  "fail_closed": true,
+  "subjects": [
+    {
+      "subject_id": "IRS-088",
+      "domain": "Resilience & Operations",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-088/raw-test.log",
+        "evidence/IRS-088/result.json",
+        "evidence/IRS-088/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-089",
+      "domain": "Resilience & Operations",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-089/raw-test.log",
+        "evidence/IRS-089/result.json",
+        "evidence/IRS-089/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-090",
+      "domain": "Resilience & Operations",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-090/raw-test.log",
+        "evidence/IRS-090/result.json",
+        "evidence/IRS-090/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-091",
+      "domain": "Supply Chain, Release, Privacy & Assurance",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-091/raw-test.log",
+        "evidence/IRS-091/result.json",
+        "evidence/IRS-091/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-092",
+      "domain": "Supply Chain, Release, Privacy & Assurance",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-092/raw-test.log",
+        "evidence/IRS-092/result.json",
+        "evidence/IRS-092/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-093",
+      "domain": "Supply Chain, Release, Privacy & Assurance",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-093/raw-test.log",
+        "evidence/IRS-093/result.json",
+        "evidence/IRS-093/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-094",
+      "domain": "Supply Chain, Release, Privacy & Assurance",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-094/raw-test.log",
+        "evidence/IRS-094/result.json",
+        "evidence/IRS-094/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-095",
+      "domain": "Supply Chain, Release, Privacy & Assurance",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-095/raw-test.log",
+        "evidence/IRS-095/result.json",
+        "evidence/IRS-095/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-096",
+      "domain": "Supply Chain, Release, Privacy & Assurance",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-096/raw-test.log",
+        "evidence/IRS-096/result.json",
+        "evidence/IRS-096/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-097",
+      "domain": "Supply Chain, Release, Privacy & Assurance",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-097/raw-test.log",
+        "evidence/IRS-097/result.json",
+        "evidence/IRS-097/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    }
+  ],
+  "execution_order": "Run one subject at a time; stop the batch on FAIL or unexpected side effect."
+}

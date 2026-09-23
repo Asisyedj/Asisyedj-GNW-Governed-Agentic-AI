@@ -1,0 +1,66 @@
+{
+  "schema": "GNW.ForceGatePolicy.v2",
+  "effective_date": "2026-09-21",
+  "default_state": "BLOCKED",
+  "release_states": [
+    "BLOCKED",
+    "RELEASE_CANDIDATE_ONLY",
+    "ELIGIBLE_FOR_CONTROLLED_ROLLOUT"
+  ],
+  "production_ready_state": "ELIGIBLE_FOR_CONTROLLED_ROLLOUT",
+  "non_negotiable_rules": [
+    "Unknown, absent, malformed, stale, contradictory, unsigned, unlinked, or unverifiable mandatory evidence is BLOCKING.",
+    "A documentation claim, source file, configuration, historical test result, ledger entry, or validator structure check is not runtime PASS evidence by itself.",
+    "Every mandatory PASS must reference the exact release candidate identity and include execution result, audit evidence, side-effect result, regression result, timestamp, and authorized reviewer where required.",
+    "Any post-freeze change to source, lockfile, Dockerfile, deployment definition, runtime configuration, distribution archive, or image digest invalidates affected release evidence and requires a new release candidate.",
+    "A human decision cannot override FAIL, BLOCKED, UNPROVEN, integrity mismatch, missing signature, missing reviewer, or an open mandatory P0/P1 control gap.",
+    "UNPROVEN is never treated as PASS.",
+    "Self-review is not independent review.",
+    "A self-generated signature is not authorized production provenance unless the signing authority is explicitly authorized for the release.",
+    "The exact artifact digest must be bound to the evidence package by a detached manifest; a self-referential archive hash is prohibited.",
+    "Final production authorization requires all mandatory gates to be PASS and all required authority/review gates to be complete."
+  ],
+  "required_gates": [
+    "local_clean_install",
+    "local_typecheck",
+    "local_tests",
+    "local_build",
+    "dependency_audit",
+    "container_build",
+    "tls_postgres_multi_instance",
+    "ssrf_dns_rebinding",
+    "distributed_kill_switch",
+    "backup_restore_anti_resurrection",
+    "secret_rotation",
+    "supply_chain_signing",
+    "irs_100_evidence",
+    "independent_review",
+    "accredited_certification"
+  ],
+  "required_irs_fields": [
+    "attack",
+    "precondition",
+    "expected",
+    "actual",
+    "side_effect",
+    "audit_evidence",
+    "verdict",
+    "regression",
+    "reviewer",
+    "review_timestamp"
+  ],
+  "forbidden_placeholders": [
+    "",
+    "MISSING",
+    "NOT_EXECUTED",
+    "UNASSIGNED",
+    "UNPROVEN",
+    "SEE_MATRIX"
+  ],
+  "artifact_binding": {
+    "source_archive_sha256_required": true,
+    "source_tree_sha256_required": true,
+    "distribution_sha256_required": true,
+    "detached_manifest_required": true
+  }
+}

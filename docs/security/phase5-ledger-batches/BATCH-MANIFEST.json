@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-09-16T08:16:54+00:00",
+  "source_ledger": "gnw/docs/security/100-independent-review-evidence.yaml",
+  "source_subjects": "gnw/docs/security/100-independent-review-subjects.md",
+  "source_ledger_is_unchanged": true,
+  "policy": "Only UNPROVEN subjects are assigned; PASS/FAIL/BLOCKED are excluded.",
+  "batch_size": 10,
+  "total_subjects": 100,
+  "verdict_counts": {
+    "UNPROVEN": 93,
+    "PASS": 7
+  },
+  "unproven_subjects": 93,
+  "batch_count": 10,
+  "batches": [
+    {
+      "batch_id": "BATCH-01",
+      "count": 10,
+      "subject_ids": [
+        "IRS-001",
+        "IRS-002",
+        "IRS-003",
+        "IRS-004",
+        "IRS-005",
+        "IRS-006",
+        "IRS-007",
+        "IRS-008",
+        "IRS-009",
+        "IRS-010"
+      ],
+      "domains": {
+        "Governance Authority": 10
+      },
+      "manifest_file": "BATCH-01.json"
+    },
+    {
+      "batch_id": "BATCH-02",
+      "count": 10,
+      "subject_ids": [
+        "IRS-011",
+        "IRS-012",
+        "IRS-013",
+        "IRS-014",
+        "IRS-015",
+        "IRS-016",
+        "IRS-017",
+        "IRS-018",
+        "IRS-019",
+        "IRS-020"
+      ],
+      "domains": {
+        "Identity & Tenancy": 10
+      },
+      "manifest_file": "BATCH-02.json"
+    },
+    {
+      "batch_id": "BATCH-03",
+      "count": 10,
+      "subject_ids": [
+        "IRS-021",
+        "IRS-022",
+        "IRS-023",
+        "IRS-024",
+        "IRS-025",
+        "IRS-026",
+        "IRS-027",
+        "IRS-028",
+        "IRS-029",
+        "IRS-030"
+      ],
+      "domains": {
+        "Approval & SoD": 10
+      },
+      "manifest_file": "BATCH-03.json"
+    },
+    {
+      "batch_id": "BATCH-04",
+      "count": 10,
+      "subject_ids": [
+        "IRS-032",
+        "IRS-033",
+        "IRS-034",
+        "IRS-035",
+        "IRS-036",
+        "IRS-037",
+        "IRS-039",
+        "IRS-041",
+        "IRS-042",
+        "IRS-043"
+      ],
+      "domains": {
+        "Grant, Capability & Execution": 7,
+        "Model, Content & Memory": 3
+      },
+      "manifest_file": "BATCH-04.json"
+    },
+    {
+      "batch_id": "BATCH-05",
+      "count": 10,
+      "subject_ids": [
+        "IRS-044",
+        "IRS-045",
+        "IRS-046",
+        "IRS-047",
+        "IRS-048",
+        "IRS-049",
+        "IRS-050",
+        "IRS-051",
+        "IRS-052",
+        "IRS-053"
+      ],
+      "domains": {
+        "Model, Content & Memory": 7,
+        "Multi-Agent & Tool Security": 3
+      },
+      "manifest_file": "BATCH-05.json"
+    },
+    {
+      "batch_id": "BATCH-06",
+      "count": 10,
+      "subject_ids": [
+        "IRS-054",
+        "IRS-055",
+        "IRS-056",
+        "IRS-057",
+        "IRS-058",
+        "IRS-059",
+        "IRS-060",
+        "IRS-065",
+        "IRS-066",
+        "IRS-067"
+      ],
+      "domains": {
+        "Multi-Agent & Tool Security": 7,
+        "Network, Egress & Secrets": 3
+      },
+      "manifest_file": "BATCH-06.json"
+    },
+    {
+      "batch_id": "BATCH-07",
+      "count": 10,
+      "subject_ids": [
+        "IRS-068",
+        "IRS-069",
+        "IRS-070",
+        "IRS-071",
+        "IRS-072",
+        "IRS-073",
+        "IRS-074",
+        "IRS-075",
+        "IRS-076",
+        "IRS-077"
+      ],
+      "domains": {
+        "Network, Egress & Secrets": 3,
+        "Data, Filesystem, Database & Audit": 7
+      },
+      "manifest_file": "BATCH-07.json"
+    },
+    {
+      "batch_id": "BATCH-08",
+      "count": 10,
+      "subject_ids": [
+        "IRS-078",
+        "IRS-079",
+        "IRS-080",
+        "IRS-081",
+        "IRS-082",
+        "IRS-083",
+        "IRS-084",
+        "IRS-085",
+        "IRS-086",
+        "IRS-087"
+      ],
+      "domains": {
+        "Data, Filesystem, Database & Audit": 3,
+        "Resilience & Operations": 7
+      },
+      "manifest_file": "BATCH-08.json"
+    },
+    {
+      "batch_id": "BATCH-09",
+      "count": 10,
+      "subject_ids": [
+        "IRS-088",
+        "IRS-089",
+        "IRS-090",
+        "IRS-091",
+        "IRS-092",
+        "IRS-093",
+        "IRS-094",
+        "IRS-095",
+        "IRS-096",
+        "IRS-097"
+      ],
+      "domains": {
+        "Resilience & Operations": 3,
+        "Supply Chain, Release, Privacy & Assurance": 7
+      },
+      "manifest_file": "BATCH-09.json"
+    },
+    {
+      "batch_id": "BATCH-10",
+      "count": 3,
+      "subject_ids": [
+        "IRS-098",
+        "IRS-099",
+        "IRS-100"
+      ],
+      "domains": {
+        "Supply Chain, Release, Privacy & Assurance": 3
+      },
+      "manifest_file": "BATCH-10.json"
+    }
+  ]
+}

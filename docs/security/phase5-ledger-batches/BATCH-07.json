@@ -1,0 +1,159 @@
+{
+  "batch_id": "BATCH-07",
+  "generated_at_utc": "2026-09-16T08:16:54+00:00",
+  "source_ledger": "gnw/docs/security/100-independent-review-evidence.yaml",
+  "fail_closed": true,
+  "subjects": [
+    {
+      "subject_id": "IRS-068",
+      "domain": "Network, Egress & Secrets",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-068/raw-test.log",
+        "evidence/IRS-068/result.json",
+        "evidence/IRS-068/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-069",
+      "domain": "Network, Egress & Secrets",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-069/raw-test.log",
+        "evidence/IRS-069/result.json",
+        "evidence/IRS-069/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-070",
+      "domain": "Network, Egress & Secrets",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-070/raw-test.log",
+        "evidence/IRS-070/result.json",
+        "evidence/IRS-070/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-071",
+      "domain": "Data, Filesystem, Database & Audit",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-071/raw-test.log",
+        "evidence/IRS-071/result.json",
+        "evidence/IRS-071/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-072",
+      "domain": "Data, Filesystem, Database & Audit",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-072/raw-test.log",
+        "evidence/IRS-072/result.json",
+        "evidence/IRS-072/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-073",
+      "domain": "Data, Filesystem, Database & Audit",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-073/raw-test.log",
+        "evidence/IRS-073/result.json",
+        "evidence/IRS-073/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-074",
+      "domain": "Data, Filesystem, Database & Audit",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-074/raw-test.log",
+        "evidence/IRS-074/result.json",
+        "evidence/IRS-074/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-075",
+      "domain": "Data, Filesystem, Database & Audit",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-075/raw-test.log",
+        "evidence/IRS-075/result.json",
+        "evidence/IRS-075/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-076",
+      "domain": "Data, Filesystem, Database & Audit",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-076/raw-test.log",
+        "evidence/IRS-076/result.json",
+        "evidence/IRS-076/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-077",
+      "domain": "Data, Filesystem, Database & Audit",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-077/raw-test.log",
+        "evidence/IRS-077/result.json",
+        "evidence/IRS-077/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    }
+  ],
+  "execution_order": "Run one subject at a time; stop the batch on FAIL or unexpected side effect."
+}

@@ -1,0 +1,159 @@
+{
+  "batch_id": "BATCH-02",
+  "generated_at_utc": "2026-09-16T08:16:54+00:00",
+  "source_ledger": "gnw/docs/security/100-independent-review-evidence.yaml",
+  "fail_closed": true,
+  "subjects": [
+    {
+      "subject_id": "IRS-011",
+      "domain": "Identity & Tenancy",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-011/raw-test.log",
+        "evidence/IRS-011/result.json",
+        "evidence/IRS-011/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-012",
+      "domain": "Identity & Tenancy",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-012/raw-test.log",
+        "evidence/IRS-012/result.json",
+        "evidence/IRS-012/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-013",
+      "domain": "Identity & Tenancy",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-013/raw-test.log",
+        "evidence/IRS-013/result.json",
+        "evidence/IRS-013/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-014",
+      "domain": "Identity & Tenancy",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-014/raw-test.log",
+        "evidence/IRS-014/result.json",
+        "evidence/IRS-014/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-015",
+      "domain": "Identity & Tenancy",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-015/raw-test.log",
+        "evidence/IRS-015/result.json",
+        "evidence/IRS-015/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-016",
+      "domain": "Identity & Tenancy",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-016/raw-test.log",
+        "evidence/IRS-016/result.json",
+        "evidence/IRS-016/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-017",
+      "domain": "Identity & Tenancy",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-017/raw-test.log",
+        "evidence/IRS-017/result.json",
+        "evidence/IRS-017/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-018",
+      "domain": "Identity & Tenancy",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-018/raw-test.log",
+        "evidence/IRS-018/result.json",
+        "evidence/IRS-018/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-019",
+      "domain": "Identity & Tenancy",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-019/raw-test.log",
+        "evidence/IRS-019/result.json",
+        "evidence/IRS-019/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    },
+    {
+      "subject_id": "IRS-020",
+      "domain": "Identity & Tenancy",
+      "attack": "NOT_EXECUTED",
+      "expected": "SEE_MATRIX",
+      "current_verdict": "UNPROVEN",
+      "evidence_status": "MISSING",
+      "execution_status": "NOT_STARTED",
+      "required_artifacts": [
+        "evidence/IRS-020/raw-test.log",
+        "evidence/IRS-020/result.json",
+        "evidence/IRS-020/sha256sums.txt"
+      ],
+      "promotion_rule": "Promote to PASS only after exact executable evidence and regression PASS."
+    }
+  ],
+  "execution_order": "Run one subject at a time; stop the batch on FAIL or unexpected side effect."
+}
