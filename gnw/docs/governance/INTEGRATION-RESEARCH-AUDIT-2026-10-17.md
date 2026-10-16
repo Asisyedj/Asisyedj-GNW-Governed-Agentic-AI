@@ -27,7 +27,7 @@ The existing phase workflows are branch-scoped. The phase-4 workflow triggers on
 
 **Observed runs:** early CI runs failed on a false-negative scanner pattern; the scanner was aligned to `executeFencedExternal()` and a follow-up regex escaping defect was corrected. On run `38968494285`, all 122 full-suite tests, 30 targeted tests, typecheck, static sink scan, sink contract check and build passed; dependency audit then correctly failed on 1 high and 3 critical advisories. The dependency remediation run `38969502631` subsequently passed the no-force lockfile remediation, dependency audit, typecheck, full and targeted tests, sink checks, build, Python council tests and all seven OpenClaw offline package test files, and then committed the remediated lockfile as commit `db2d4600c2ec18b170e330df89fbf4abfcea00b2`. A separate integration run started in parallel before that lockfile commit (`38969502670`) still failed its dependency audit against the old lockfile. A PR-triggered validation run on the current lockfile commit is required to provide a final green status for the exact final head.
 
-**Status:** one bounded dependency-remediation workflow is PASS; the regular integration workflow on the final head remains pending.
+**Final-head CI:** [PR-triggered run 38969711653](https://github.com/Asisyedj/Asisyedj-GNW-Governed-Agentic-AI/actions/runs/38969711653) on head `c47a94893a9537c17ee688680b94385ae515eae4` completed **SUCCESS**. It passed clean install; typecheck; full tests (20 files / 122 tests); targeted security and effect-fence tests (6 files / 30 tests); static governed-sink scan; external sink fence contract; build; `npm audit --audit-level=high` (0 vulnerabilities); Python council tests; all seven OpenClaw package smoke test files; `git diff --check`; and a regression step confirming the incomplete release validators still return BLOCKED. This is verified CI evidence for this integration commit, not production proof.
 
 ### F-04 — Legacy GitHub Actions references are tag-pinned (P1)
 The pre-existing phase workflows still reference `actions/checkout@v4`, `actions/setup-node@v4`, and `actions/upload-artifact@v4`. GitHub's secure-use guidance recommends full-length action commit SHAs for immutable references. The new integration workflow addresses this for its two actions: `actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1` (v7.0.1, signed verified release) and `actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1` (v7.1.0, signed verified release). The legacy branch-specific workflows remain unchanged.
@@ -63,7 +63,7 @@ The sink validators inspect TypeScript source and expected source tokens. They d
 - **Source-document integration:** PASS; all six canonical Markdown files were fetched back and compared byte-for-byte against uploaded sources.
 - **CI workflow integration:** CONFIGURED; action refs are pinned to verified full SHAs with read-only permissions in the test workflow.
 - **Dependency remediation candidate:** PASS in isolated GitHub Actions; lockfile fix now committed on the integration branch.
-- **Final-head integration CI:** PENDING PR-triggered validation.
+- **Final-head integration CI:** PASS — [run 38969711653](https://github.com/Asisyedj/Asisyedj-GNW-Governed-Agentic-AI/actions/runs/38969711653), head `c47a94893a9537c17ee688680b94385ae515eae4`.
 - **100-case evidence gate and cryptographic release attestation:** BLOCKED / UNPROVEN.
 - **Production release and certification:** DENIED / NOT ESTABLISHED.
 
