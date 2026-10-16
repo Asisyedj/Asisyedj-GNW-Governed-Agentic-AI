@@ -87,6 +87,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # The build writes this tracked generated bundle; restore that unrelated artifact so only the lockfile can be promoted.
+          git restore --worktree -- gnw/dist/server/index.js
           sha256sum gnw/package.json gnw/package-lock.json | tee dependency-remediation-evidence/after.sha256
           git diff --stat -- gnw/package.json gnw/package-lock.json | tee dependency-remediation-evidence/lockfile-diff-stat.txt
           cp gnw/package-lock.json dependency-remediation-evidence/package-lock.json
