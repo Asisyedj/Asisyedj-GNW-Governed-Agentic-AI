@@ -78,10 +78,32 @@
     "dependency_remediation": "PASS in isolated GitHub Actions run 38969502631",
     "application_tests": "PASS in remediation workflow: 122 full tests, 30 targeted security/effect-fence tests; tests are not additive",
     "typecheck_build_static_sinks_python_openclaw": "PASS in remediation workflow",
-    "current_head_integration_ci": "PENDING PR-triggered run on db2d4600c2ec18b170e330df89fbf4abfcea00b2",
+    "current_head_integration_ci": {
+      "status": "PASS",
+      "run_id": 38969711653,
+      "url": "https://github.com/Asisyedj/Asisyedj-GNW-Governed-Agentic-AI/actions/runs/38969711653",
+      "head_sha": "c47a94893a9537c17ee688680b94385ae515eae4",
+      "checks": {
+        "clean_install": "PASS",
+        "typecheck": "PASS",
+        "full_test_files": 20,
+        "full_tests_passed": 122,
+        "targeted_security_files": 6,
+        "targeted_security_tests_passed": 30,
+        "static_sink_scan": "PASS",
+        "external_sink_contract": "PASS",
+        "build": "PASS",
+        "npm_audit": "PASS; 0 vulnerabilities",
+        "python_council_tests": "PASS",
+        "openclaw_package_test_files": 7,
+        "release_evidence_validators": "PASS as validators correctly remained BLOCKED (IRS PASS=0, UNPROVEN=100)",
+        "git_diff_check": "PASS"
+      },
+      "interpretation": "Verified CI for the exact integration head. Does not establish production readiness, provider proof, certification, or completion of 100 security cases."
+    },
     "release_evidence": "BLOCKED: signature is presence-checked, not cryptographically verified; 100 security records are structural, not independently attested",
     "production_release": "DENIED",
-    "deployment": "NOT PERFORMED"
+    "deployment": "NOT_PERFORMED"
   },
   "integration_ci_workflow": {
     "path": ".github/workflows/gnw-integration-validation.yml",
@@ -107,9 +129,9 @@
     "permissions": {
       "contents": "read"
     },
-    "execution_status": "Configured; prior CI runs are recorded in INTEGRATION-RESEARCH-AUDIT-2026-10-17.md; PR-triggered run on current final head pending."
+    "execution_status": "PASS: PR-triggered workflow run 38969711653 succeeded on current integration head; production release still denied due independent security/evidence blockers."
   },
-  "current_head_commit": "db2d4600c2ec18b170e330df89fbf4abfcea00b2",
+  "current_head_commit": "c47a94893a9537c17ee688680b94385ae515eae4",
   "lockfile_remediation": {
     "commit": "db2d4600c2ec18b170e330df89fbf4abfcea00b2",
     "commit_url": "https://github.com/Asisyedj/Asisyedj-GNW-Governed-Agentic-AI/commit/db2d4600c2ec18b170e330df89fbf4abfcea00b2",
