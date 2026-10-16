@@ -5,7 +5,7 @@
   "branch": "integration/evidence-governance-package-2026-10-17",
   "base_branch": "remediation/phase5-sandbox-sink-contracts-2026-09-15",
   "base_commit": "7f408afc7e5feadc1649cc44e75ba8b2c0c5d162",
-  "integration_scope": "governance documentation only; no application code, deployment or production authorization",
+  "integration_scope": "governance specifications, research audit, scoped CI workflows, static sink-scanner alignment, and audited dependency-lockfile remediation; no deployment, production authorization, or feature release",
   "sources": [
     {
       "uploaded_name": "GNW_Architecture_Decisions_(ADRs).md",
@@ -73,11 +73,15 @@
     }
   ],
   "validation": {
-    "source_integrity": "SHA-256 measured on uploaded files",
-    "repository_readback": "required after each commit",
-    "application_tests": "NOT_RUN",
-    "github_actions": "NOT_VERIFIED: workflow configuration is committed, but a fresh successful run and its logs are not yet verified",
-    "production_release": "DENIED"
+    "source_integrity": "PASS: SHA-256 measured on all six canonical uploaded Markdown files; duplicate evaluation file hash matched",
+    "repository_readback": "PASS: canonical Markdown source contents fetched back and compared byte-for-byte; lockfile versions and Git blob read back",
+    "dependency_remediation": "PASS in isolated GitHub Actions run 38969502631",
+    "application_tests": "PASS in remediation workflow: 122 full tests, 30 targeted security/effect-fence tests; tests are not additive",
+    "typecheck_build_static_sinks_python_openclaw": "PASS in remediation workflow",
+    "current_head_integration_ci": "PENDING PR-triggered run on db2d4600c2ec18b170e330df89fbf4abfcea00b2",
+    "release_evidence": "BLOCKED: signature is presence-checked, not cryptographically verified; 100 security records are structural, not independently attested",
+    "production_release": "DENIED",
+    "deployment": "NOT PERFORMED"
   },
   "integration_ci_workflow": {
     "path": ".github/workflows/gnw-integration-validation.yml",
@@ -103,6 +107,23 @@
     "permissions": {
       "contents": "read"
     },
-    "execution_status": "NOT_VERIFIED: no GitHub Actions run/status was returned at manifest update time"
+    "execution_status": "Configured; prior CI runs are recorded in INTEGRATION-RESEARCH-AUDIT-2026-10-17.md; PR-triggered run on current final head pending."
+  },
+  "current_head_commit": "db2d4600c2ec18b170e330df89fbf4abfcea00b2",
+  "lockfile_remediation": {
+    "commit": "db2d4600c2ec18b170e330df89fbf4abfcea00b2",
+    "commit_url": "https://github.com/Asisyedj/Asisyedj-GNW-Governed-Agentic-AI/commit/db2d4600c2ec18b170e330df89fbf4abfcea00b2",
+    "package_json_unchanged": true,
+    "previous_sha256": "d652675f2651efcec306e02ccffa5725863d138f593448bb7394018a5fd96e5e",
+    "new_sha256": "247fa8285f3931ecd2ffb438702dcd30e01a2de28394126b088d9a3d7745f57b",
+    "git_blob_sha": "0c432f05d131d1219f1ece2ee18ba22382b81033",
+    "versions": {
+      "concurrently": "9.2.5",
+      "proxy-addr": "2.0.8",
+      "shell-quote": "1.12.0",
+      "source-map-js": "1.2.2"
+    },
+    "verification_run": "https://github.com/Asisyedj/Asisyedj-GNW-Governed-Agentic-AI/actions/runs/38969502631",
+    "workflow_result": "PASS"
   }
 }
