@@ -5,9 +5,17 @@ on:
     branches:
       - "integration/**"
     paths:
-      - "gnw/**"
+      - "gnw/src/**"
+      - "gnw/tests/**"
+      - "gnw/scripts/**"
+      - "gnw/package.json"
+      - "gnw/package-lock.json"
+      - "gnw/vite.config.*"
+      - "gnw/vitest.config.*"
+      - "gnw/tsconfig*.json"
       - "openclaw_portable/**"
       - ".github/workflows/gnw-integration-validation.yml"
+      - ".github/workflows/gnw-dependency-remediation-preview.yml"
   pull_request:
     branches:
       - "remediation/phase5-sandbox-sink-contracts-2026-09-15"
@@ -92,6 +100,21 @@ jobs:
       - name: Python council tests
         run: npm run test:council-python
 
+      - name: Verify release validators remain fail-closed
+        shell: bash
+        run: |
+          set +e
+          node scripts/validate-100-evidence.mjs
+          evidence_code=$?
+          node scripts/validate-release-evidence.mjs
+          release_code=$?
+          set -e
+          printf "irs_100_exit=%s\\nrelease_evidence_exit=%s\\n" "$evidence_code" "$release_code"
+          if [[ "$evidence_code" -ne 2 || "$release_code" -ne 2 ]]; then
+            echo "FAIL: current incomplete release evidence must remain BLOCKED (exit 2)." >&2
+            exit 1
+          fi
+          echo "PASS: release validators correctly preserve BLOCKED status; this does not authorize release."
       - name: OpenClaw offline package smoke tests
         working-directory: .
         run: python3 openclaw_portable/run_order_smoke_tests.py
