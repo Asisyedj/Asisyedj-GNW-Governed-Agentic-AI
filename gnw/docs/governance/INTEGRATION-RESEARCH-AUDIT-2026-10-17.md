@@ -20,15 +20,17 @@ In `gnw/scripts/validate-release-evidence.mjs`, the validator checks that `revie
 
 **Required remediation:** give each record a schema-validated evidence URI/path, SHA-256, test/run ID, source commit/tree digest, environment/container digest, expected/actual result, effect trace, regression run, timestamp with timezone, reviewer identity and verified signature. Resolve the evidence path within an allowlisted evidence root, reject traversal/symlinks, hash the file, verify its run/commit binding and require all mandatory values. Keep all current IRS rows UNPROVEN until actual evidence is collected.
 
-### F-03 — Existing validation workflows do not automatically cover the integration branch (P1)
-The inspected phase workflows are branch-scoped. The phase-4 workflow triggers on pushes to `remediation/phase4-rebased-current-2026-09-14` and `workflow_dispatch`; phase-2 and phase-3 workflows likewise target their named remediation branches. None of those push filters includes this integration branch, and the inspected phase-4 workflow does not declare a `pull_request` trigger. Consequently, a documentation-only commit here cannot be assumed to have run the required checks automatically.
+### F-03 — Branch-scoped workflow coverage and integration CI (P1)
+The existing phase workflows are branch-scoped. The phase-4 workflow triggers on pushes to `remediation/phase4-rebased-current-2026-09-14` and `workflow_dispatch`; the phase-2 and phase-3 workflows target their own named remediation branches. Those push filters do not cover this integration branch.
 
-**Required remediation:** add an appropriately scoped pull-request validation workflow for active integration branches, use minimal token permissions, separate code-quality CI from release authorization, and preserve the expected `BLOCKED` result of unproven production gates rather than disguising it as an application-test failure or PASS.
+**Branch-level mitigation committed:** `.github/workflows/gnw-integration-validation.yml` now adds a push trigger for `integration/**`, a pull-request trigger targeting the phase-5 remediation branch, and manual `workflow_dispatch`. It runs clean install, typecheck, full and targeted security/effect-fence tests, static sink checks, build, dependency audit and Python smoke suites. It uses read-only contents permissions and pins `actions/checkout` and `actions/setup-node` to full commit SHAs. This is a CI configuration change, not proof that a run has succeeded.
 
-### F-04 — GitHub Actions dependencies are tag-pinned rather than immutable (P1)
-The inspected workflow references `actions/checkout@v4`, `actions/setup-node@v4`, and `actions/upload-artifact@v4`. GitHub's secure-use guidance recommends pinning third-party actions to full-length commit SHAs. Mutable tags are easier to maintain but do not provide the same immutable dependency reference.
+**Status:** branch coverage configured; execution remains NOT VERIFIED until an actual Actions run and its logs are inspected.
 
-**Required remediation:** pin every third-party action to a reviewed full commit SHA, record the corresponding human-readable release, and automate controlled updates.
+### F-04 — Legacy GitHub Actions references are tag-pinned (P1)
+The pre-existing phase workflows still reference `actions/checkout@v4`, `actions/setup-node@v4`, and `actions/upload-artifact@v4`. GitHub's secure-use guidance recommends full-length action commit SHAs for immutable references. The new integration workflow addresses this for its two actions: `actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1` (v7.0.1, signed verified release) and `actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1` (v7.1.0, signed verified release). The legacy branch-specific workflows remain unchanged.
+
+**Status:** mitigated in integration CI only; legacy workflow pinning remains open.
 
 ### F-05 — Local fencing tests do not prove PostgreSQL or external-provider guarantees (P0 before production)
 The inspected effect-fence unit test uses an in-memory SQLite database. This is useful unit evidence for the tested code path but is not a PostgreSQL multi-session or production provider proof. The repository's own release manifest correctly marks TLS/PostgreSQL multi-instance, DNS rebinding/SSRF, distributed kill switch, backup/restore anti-resurrection, secret rotation, signing/provenance and independent review as BLOCKED.
@@ -51,8 +53,8 @@ The sink validators inspect TypeScript source and expected source tokens. They d
 
 ## Acceptance status
 - **Document integration:** completed in this branch, with each committed Markdown source read back from GitHub for exact-content comparison.
-- **Local source tests / CI:** NOT RUN during this operation.
-- **Fresh GitHub Actions results:** NOT VERIFIED by the available run lookup; no successful run is claimed.
+- **Local source tests:** NOT RUN during this operation because the registered local Windows device is offline.
+- **Integration GitHub Actions:** workflow configuration committed; combined status and run lookup returned no run at the time of this record. A successful CI run is NOT claimed.
 - **100-case evidence gate:** BLOCKED / UNPROVEN.
 - **Production release and certification:** DENIED / NOT ESTABLISHED.
 
