@@ -1,0 +1,101 @@
+name: GNW Integration Validation
+
+on:
+  push:
+    branches:
+      - "integration/**"
+    paths:
+      - "gnw/**"
+      - "openclaw_portable/**"
+      - ".github/workflows/gnw-integration-validation.yml"
+  pull_request:
+    branches:
+      - "remediation/phase5-sandbox-sink-contracts-2026-09-15"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gnw-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Source tests and static security gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: true
+    defaults:
+      run:
+        working-directory: gnw
+    steps:
+      - name: Checkout exact commit (pinned SHA)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Node 22 (pinned SHA)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.13.0
+          cache: npm
+          cache-dependency-path: gnw/package-lock.json
+          package-manager-cache: false
+
+      - name: Record source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            printf 'repository=%s\n' "$GITHUB_REPOSITORY"
+            printf 'ref=%s\n' "$GITHUB_REF"
+            printf 'sha=%s\n' "$GITHUB_SHA"
+            printf 'node=%s\n' "$(node --version)"
+            printf 'npm=%s\n' "$(npm --version)"
+            printf 'package_lock_sha256=%s\n' "$(sha256sum package-lock.json | awk '{print $1}')"
+          }
+
+      - name: Clean install
+        run: npm ci
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+      - name: Full application tests
+        run: npm test
+
+      - name: Security boundary and effect-fence tests
+        run: >-
+          npx vitest run
+          tests/phase3-security-boundaries.test.ts
+          tests/executor-auth.test.ts
+          tests/phase4-effect-fence.test.ts
+          tests/phase4-provider-contract.test.ts
+          tests/skills-engine.test.ts
+          tests/governed-execution.test.ts
+
+      - name: Static governed-sink scan
+        run: node scripts/security-sink-scan.mjs
+
+      - name: External sink fence contract gate
+        run: npm run verify:sinks
+
+      - name: Production build
+        run: npm run build
+
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+
+      - name: Python council tests
+        run: npm run test:council-python
+
+      - name: OpenClaw offline package smoke tests
+        working-directory: .
+        run: python3 openclaw_portable/run_order_smoke_tests.py
+
+      - name: Whitespace and patch integrity
+        working-directory: .
+        run: git diff --check
