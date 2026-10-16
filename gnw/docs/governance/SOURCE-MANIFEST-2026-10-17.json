@@ -76,7 +76,33 @@
     "source_integrity": "SHA-256 measured on uploaded files",
     "repository_readback": "required after each commit",
     "application_tests": "NOT_RUN",
-    "github_actions": "NOT_VERIFIED",
+    "github_actions": "NOT_VERIFIED: workflow configuration is committed, but a fresh successful run and its logs are not yet verified",
     "production_release": "DENIED"
+  },
+  "integration_ci_workflow": {
+    "path": ".github/workflows/gnw-integration-validation.yml",
+    "triggers": {
+      "push": "integration/**",
+      "pull_request": "remediation/phase5-sandbox-sink-contracts-2026-09-15",
+      "manual": "workflow_dispatch"
+    },
+    "pinned_actions": [
+      {
+        "action": "actions/checkout",
+        "release": "v7.0.1",
+        "commit": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+        "release_url": "https://github.com/actions/checkout/releases"
+      },
+      {
+        "action": "actions/setup-node",
+        "release": "v7.1.0",
+        "commit": "949feb2413d6458794dcd2491c4babbbce0c15c1",
+        "release_url": "https://github.com/actions/setup-node/releases"
+      }
+    ],
+    "permissions": {
+      "contents": "read"
+    },
+    "execution_status": "NOT_VERIFIED: no GitHub Actions run/status was returned at manifest update time"
   }
 }
