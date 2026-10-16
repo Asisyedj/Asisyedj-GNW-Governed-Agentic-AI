@@ -101,15 +101,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          changed="$(git diff --name-only)"
-          if [[ -z "$changed" ]]; then
-            echo "No lockfile changes required."
-            exit 0
-          fi
-          if [[ "$changed" != "gnw/package-lock.json" ]]; then
-            echo "FAIL: remediation changed unexpected tracked paths: $changed" >&2
+          before_package="$(awk '$2 == "gnw/package.json" {print $1}' dependency-remediation-evidence/before.sha256)"
+          after_package="$(awk '$2 == "gnw/package.json" {print $1}' dependency-remediation-evidence/after.sha256)"
+          before_lock="$(awk '$2 == "gnw/package-lock.json" {print $1}' dependency-remediation-evidence/before.sha256)"
+          after_lock="$(awk '$2 == "gnw/package-lock.json" {print $1}' dependency-remediation-evidence/after.sha256)"
+          if [[ -z "$before_package" || -z "$after_package" || -z "$before_lock" || -z "$after_lock" ]]; then
+            echo "FAIL: before/after dependency digest record is incomplete." >&2
             exit 2
           fi
+          if [[ "$before_package" != "$after_package" ]]; then
+            echo "FAIL: remediation must not edit gnw/package.json." >&2
+            exit 2
+          fi
+          if [[ "$before_lock" == "$after_lock" ]]; then
+            echo "No lockfile changes required; before and after SHA-256 match."
+            exit 0
+          fi
+          echo "Verified lockfile SHA-256 changed from $before_lock to $after_lock; preparing single-file GitHub API update."
           node --input-type=module <<'NODE'
           import fs from "node:fs";
           import { execFileSync } from "node:child_process";
