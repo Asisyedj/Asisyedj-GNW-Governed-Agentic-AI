@@ -28,7 +28,7 @@ if (unsafeNetworkFiles.length || missingGovernedImport.length) {
 // External LLM, webhook, and video sinks use the durable-fence wrapper.
 // Accept the current executeFencedExternal() boundary rather than incorrectly
 // requiring the older executeExternal() name.
-const executionCallers = files.filter(file => /\\bexecute(?:Fenced)?External\\s*\\(/.test(source.get(file)));
+const executionCallers = files.filter(file => /\bexecute(?:Fenced)?External\s*\(/.test(source.get(file)));
 const externalModules = [
   { name: "llm.ts", boundary: "executeFencedExternal" },
   { name: "video.ts", boundary: "executeFencedExternal" },
