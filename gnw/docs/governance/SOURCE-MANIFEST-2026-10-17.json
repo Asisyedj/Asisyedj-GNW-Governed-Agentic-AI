@@ -80,9 +80,9 @@
     "typecheck_build_static_sinks_python_openclaw": "PASS in remediation workflow",
     "current_head_integration_ci": {
       "status": "PASS",
-      "run_id": 38969711653,
-      "url": "https://github.com/Asisyedj/Asisyedj-GNW-Governed-Agentic-AI/actions/runs/38969711653",
-      "head_sha": "c47a94893a9537c17ee688680b94385ae515eae4",
+      "run_id": 38969845167,
+      "url": "https://github.com/Asisyedj/Asisyedj-GNW-Governed-Agentic-AI/actions/runs/38969845167",
+      "validated_code_sha": "75725cbacdfa2a84e43d41e56ae3709b538ad86e",
       "checks": {
         "clean_install": "PASS",
         "typecheck": "PASS",
@@ -99,7 +99,7 @@
         "release_evidence_validators": "PASS as validators correctly remained BLOCKED (IRS PASS=0, UNPROVEN=100)",
         "git_diff_check": "PASS"
       },
-      "interpretation": "Verified CI for the exact integration head. Does not establish production readiness, provider proof, certification, or completion of 100 security cases."
+      "interpretation": "Verified CI for the recorded code snapshot. Later changes only updated audit metadata. Does not establish production readiness, provider proof, certification, or completion of the 100 security cases."
     },
     "release_evidence": "BLOCKED: signature is presence-checked, not cryptographically verified; 100 security records are structural, not independently attested",
     "production_release": "DENIED",
@@ -129,9 +129,8 @@
     "permissions": {
       "contents": "read"
     },
-    "execution_status": "PASS: PR-triggered workflow run 38969711653 succeeded on current integration head; production release still denied due independent security/evidence blockers."
+    "execution_status": "PASS: PR-triggered workflow run 38969845167 succeeded on code snapshot 75725cbacdfa2a84e43d41e56ae3709b538ad86e; later updates were documentation-only. Production release remains denied."
   },
-  "current_head_commit": "c47a94893a9537c17ee688680b94385ae515eae4",
   "lockfile_remediation": {
     "commit": "db2d4600c2ec18b170e330df89fbf4abfcea00b2",
     "commit_url": "https://github.com/Asisyedj/Asisyedj-GNW-Governed-Agentic-AI/commit/db2d4600c2ec18b170e330df89fbf4abfcea00b2",
@@ -147,5 +146,7 @@
     },
     "verification_run": "https://github.com/Asisyedj/Asisyedj-GNW-Governed-Agentic-AI/actions/runs/38969502631",
     "workflow_result": "PASS"
-  }
+  },
+  "last_validated_code_commit": "75725cbacdfa2a84e43d41e56ae3709b538ad86e",
+  "post_validation_changes": "Only the audit report and source manifest were updated after the passing CI run; no application source, workflow or package-lock changes followed that run."
 }
