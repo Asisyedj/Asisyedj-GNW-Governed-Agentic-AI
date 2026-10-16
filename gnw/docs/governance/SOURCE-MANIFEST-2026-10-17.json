@@ -1,0 +1,152 @@
+{
+  "schema": "GNW.GovernanceSourceManifest.v1",
+  "assessment_date": "2026-10-17",
+  "repository": "Asisyedj/Asisyedj-GNW-Governed-Agentic-AI",
+  "branch": "integration/evidence-governance-package-2026-10-17",
+  "base_branch": "remediation/phase5-sandbox-sink-contracts-2026-09-15",
+  "base_commit": "7f408afc7e5feadc1649cc44e75ba8b2c0c5d162",
+  "integration_scope": "governance specifications, research audit, scoped CI workflows, static sink-scanner alignment, and audited dependency-lockfile remediation; no deployment, production authorization, or feature release",
+  "sources": [
+    {
+      "uploaded_name": "GNW_Architecture_Decisions_(ADRs).md",
+      "repository_path": "gnw/docs/governance/GNW_Architecture_Decisions_ADRs.md",
+      "sha256": "8e11f763e26ed8c3381a0aa620f4bc052e9dc86223d2f2000afdbbc20b34d565",
+      "bytes": 7939
+    },
+    {
+      "uploaded_name": "GNW_Evaluation_Specification.md",
+      "repository_path": "gnw/docs/governance/GNW_Evaluation_Specification.md",
+      "sha256": "78e0f91cbe8dcede992d84345ac25424b988566600110ea0200948e197607723",
+      "bytes": 8776
+    },
+    {
+      "uploaded_name": "GNW_Evidence_Ledger.md",
+      "repository_path": "gnw/docs/governance/GNW_Evidence_Ledger.md",
+      "sha256": "e3218e77b7765344cca0036d90f83985b5e2a21b9fc60250d3bc696a7e35321b",
+      "bytes": 10523
+    },
+    {
+      "uploaded_name": "GNW_Implementation_Backlog.md",
+      "repository_path": "gnw/docs/governance/GNW_Implementation_Backlog.md",
+      "sha256": "927cb112860f5999ea8a8eec678d7489cf707996ece06c02f63f079734c96386",
+      "bytes": 8420
+    },
+    {
+      "uploaded_name": "GNW_Requirements_Traceability_Matrix.md",
+      "repository_path": "gnw/docs/governance/GNW_Requirements_Traceability_Matrix.md",
+      "sha256": "4b930eb8cf5206d3a7ff43adcb73932c57dfb1274ac5278eff5b1d9207186a0b",
+      "bytes": 6902
+    },
+    {
+      "uploaded_name": "GNW_Risk_Register.md",
+      "repository_path": "gnw/docs/governance/GNW_Risk_Register.md",
+      "sha256": "110b2c44354fcf3b4bc1e862bad7742c814eb4bff4d4223f49a63a7589afb52d",
+      "bytes": 8098
+    }
+  ],
+  "duplicates": [
+    {
+      "uploaded_names": [
+        "GNW_Evaluation_Specification.md",
+        "GNW_Evaluation_Specification (1).md"
+      ],
+      "sha256": "78e0f91cbe8dcede992d84345ac25424b988566600110ea0200948e197607723",
+      "disposition": "byte-identical; one canonical repository copy"
+    }
+  ],
+  "excluded": [
+    {
+      "name": "GNW_Evidence-Governed_Research_Package.pdf",
+      "sha256": "dd85291366f44474216a343b1783270f46dd63684ae2515cc60d84ccd195c19d",
+      "bytes": 587690,
+      "disposition": "original PDF retained as separate source attachment; not included in this text-only documentation commit"
+    },
+    {
+      "name": "SKILL (1).md",
+      "sha256": "61b6b1dc44e4fe44d98f6c6eab760475a030fe1d907f64c819d286b28004ee52",
+      "disposition": "tool instruction material, not GNW product documentation"
+    },
+    {
+      "name": "SKILL (2).md",
+      "sha256": "c5bdfdb59247a1e9416cee577ff45a7acfa9dc2323a366fc3b44d234c0fcd2f7",
+      "disposition": "tool instruction material, not GNW product documentation"
+    }
+  ],
+  "validation": {
+    "source_integrity": "PASS: SHA-256 measured on all six canonical uploaded Markdown files; duplicate evaluation file hash matched",
+    "repository_readback": "PASS: canonical Markdown source contents fetched back and compared byte-for-byte; lockfile versions and Git blob read back",
+    "dependency_remediation": "PASS in isolated GitHub Actions run 38969502631",
+    "application_tests": "PASS in remediation workflow: 122 full tests, 30 targeted security/effect-fence tests; tests are not additive",
+    "typecheck_build_static_sinks_python_openclaw": "PASS in remediation workflow",
+    "current_head_integration_ci": {
+      "status": "PASS",
+      "run_id": 38969845167,
+      "url": "https://github.com/Asisyedj/Asisyedj-GNW-Governed-Agentic-AI/actions/runs/38969845167",
+      "validated_code_sha": "75725cbacdfa2a84e43d41e56ae3709b538ad86e",
+      "checks": {
+        "clean_install": "PASS",
+        "typecheck": "PASS",
+        "full_test_files": 20,
+        "full_tests_passed": 122,
+        "targeted_security_files": 6,
+        "targeted_security_tests_passed": 30,
+        "static_sink_scan": "PASS",
+        "external_sink_contract": "PASS",
+        "build": "PASS",
+        "npm_audit": "PASS; 0 vulnerabilities",
+        "python_council_tests": "PASS",
+        "openclaw_package_test_files": 7,
+        "release_evidence_validators": "PASS as validators correctly remained BLOCKED (IRS PASS=0, UNPROVEN=100)",
+        "git_diff_check": "PASS"
+      },
+      "interpretation": "Verified CI for the recorded code snapshot. Later changes only updated audit metadata. Does not establish production readiness, provider proof, certification, or completion of the 100 security cases."
+    },
+    "release_evidence": "BLOCKED: signature is presence-checked, not cryptographically verified; 100 security records are structural, not independently attested",
+    "production_release": "DENIED",
+    "deployment": "NOT_PERFORMED"
+  },
+  "integration_ci_workflow": {
+    "path": ".github/workflows/gnw-integration-validation.yml",
+    "triggers": {
+      "push": "integration/**",
+      "pull_request": "remediation/phase5-sandbox-sink-contracts-2026-09-15",
+      "manual": "workflow_dispatch"
+    },
+    "pinned_actions": [
+      {
+        "action": "actions/checkout",
+        "release": "v7.0.1",
+        "commit": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+        "release_url": "https://github.com/actions/checkout/releases"
+      },
+      {
+        "action": "actions/setup-node",
+        "release": "v7.1.0",
+        "commit": "949feb2413d6458794dcd2491c4babbbce0c15c1",
+        "release_url": "https://github.com/actions/setup-node/releases"
+      }
+    ],
+    "permissions": {
+      "contents": "read"
+    },
+    "execution_status": "PASS: PR-triggered workflow run 38969845167 succeeded on code snapshot 75725cbacdfa2a84e43d41e56ae3709b538ad86e; later updates were documentation-only. Production release remains denied."
+  },
+  "lockfile_remediation": {
+    "commit": "db2d4600c2ec18b170e330df89fbf4abfcea00b2",
+    "commit_url": "https://github.com/Asisyedj/Asisyedj-GNW-Governed-Agentic-AI/commit/db2d4600c2ec18b170e330df89fbf4abfcea00b2",
+    "package_json_unchanged": true,
+    "previous_sha256": "d652675f2651efcec306e02ccffa5725863d138f593448bb7394018a5fd96e5e",
+    "new_sha256": "247fa8285f3931ecd2ffb438702dcd30e01a2de28394126b088d9a3d7745f57b",
+    "git_blob_sha": "0c432f05d131d1219f1ece2ee18ba22382b81033",
+    "versions": {
+      "concurrently": "9.2.5",
+      "proxy-addr": "2.0.8",
+      "shell-quote": "1.12.0",
+      "source-map-js": "1.2.2"
+    },
+    "verification_run": "https://github.com/Asisyedj/Asisyedj-GNW-Governed-Agentic-AI/actions/runs/38969502631",
+    "workflow_result": "PASS"
+  },
+  "last_validated_code_commit": "75725cbacdfa2a84e43d41e56ae3709b538ad86e",
+  "post_validation_changes": "Only the audit report and source manifest were updated after the passing CI run; no application source, workflow or package-lock changes followed that run."
+}

@@ -1,0 +1,168 @@
+name: GNW Dependency Remediation
+
+on:
+  push:
+    branches:
+      - "integration/**"
+    paths:
+      - "gnw/package.json"
+      - "gnw/package-lock.json"
+      - ".github/workflows/gnw-dependency-remediation-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gnw-dependency-remediation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  remediate:
+    name: Preview semver-safe lockfile remediation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout exact commit (pinned SHA)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Node 22 (pinned SHA)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.13.0
+          package-manager-cache: false
+
+      - name: Capture baseline dependency identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dependency-remediation-evidence
+          sha256sum gnw/package.json gnw/package-lock.json | tee dependency-remediation-evidence/before.sha256
+          cp gnw/package.json dependency-remediation-evidence/package.json.before
+
+      - name: Install source lockfile
+        working-directory: gnw
+        run: npm ci
+
+      - name: Apply npm's non-forced semver-compatible lockfile fixes
+        working-directory: gnw
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm audit fix --package-lock-only --ignore-scripts
+          cmp package.json ../dependency-remediation-evidence/package.json.before || {
+            echo "FAIL: remediation unexpectedly changed package.json" >&2
+            exit 2
+          }
+
+      - name: Reinstall from remediated lockfile
+        working-directory: gnw
+        run: npm ci
+
+      - name: Verify dependency audit
+        working-directory: gnw
+        run: npm audit --audit-level=high
+
+      - name: Verify application typecheck, tests and build
+        working-directory: gnw
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run typecheck
+          npm test
+          npx vitest run tests/phase3-security-boundaries.test.ts tests/executor-auth.test.ts tests/phase4-effect-fence.test.ts tests/phase4-provider-contract.test.ts tests/skills-engine.test.ts tests/governed-execution.test.ts
+          node scripts/security-sink-scan.mjs
+          npm run verify:sinks
+          npm run build
+          npm run test:council-python
+          python3 ../openclaw_portable/run_order_smoke_tests.py
+
+      - name: Record remediated lockfile digest
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The build writes this tracked generated bundle; restore that unrelated artifact so only the lockfile can be promoted.
+          git restore --worktree -- gnw/dist/server/index.js
+          sha256sum gnw/package.json gnw/package-lock.json | tee dependency-remediation-evidence/after.sha256
+          git diff --stat -- gnw/package.json gnw/package-lock.json | tee dependency-remediation-evidence/lockfile-diff-stat.txt
+          cp gnw/package-lock.json dependency-remediation-evidence/package-lock.json
+          sha256sum dependency-remediation-evidence/package-lock.json | tee dependency-remediation-evidence/artifact.sha256
+
+      - name: Commit audited lockfile fix to this integration branch only
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/integration/evidence-governance-package-2026-10-17'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          before_package="$(awk '$2 == "gnw/package.json" {print $1}' dependency-remediation-evidence/before.sha256)"
+          after_package="$(awk '$2 == "gnw/package.json" {print $1}' dependency-remediation-evidence/after.sha256)"
+          before_lock="$(awk '$2 == "gnw/package-lock.json" {print $1}' dependency-remediation-evidence/before.sha256)"
+          after_lock="$(awk '$2 == "gnw/package-lock.json" {print $1}' dependency-remediation-evidence/after.sha256)"
+          if [[ -z "$before_package" || -z "$after_package" || -z "$before_lock" || -z "$after_lock" ]]; then
+            echo "FAIL: before/after dependency digest record is incomplete." >&2
+            exit 2
+          fi
+          if [[ "$before_package" != "$after_package" ]]; then
+            echo "FAIL: remediation must not edit gnw/package.json." >&2
+            exit 2
+          fi
+          if [[ "$before_lock" == "$after_lock" ]]; then
+            echo "No lockfile changes required; before and after SHA-256 match."
+            exit 0
+          fi
+          echo "Verified lockfile SHA-256 changed from $before_lock to $after_lock; preparing single-file GitHub API update."
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import { execFileSync } from "node:child_process";
+          const token = process.env.GH_TOKEN;
+          const repository = process.env.GITHUB_REPOSITORY;
+          const branch = process.env.GITHUB_REF_NAME;
+          if (!token || !repository || branch !== "integration/evidence-governance-package-2026-10-17") {
+            throw new Error("branch_or_token_guard_failed");
+          }
+          const data = fs.readFileSync("gnw/package-lock.json").toString("base64");
+          const url = "https://api.github.com/repos/" + repository + "/contents/gnw/package-lock.json";
+          const headers = {
+            authorization: "Bearer " + token,
+            accept: "application/vnd.github+json",
+            "content-type": "application/json",
+            "x-github-api-version": "2022-11-28"
+          };
+          const currentResponse = await fetch(url + "?ref=" + encodeURIComponent(branch), { headers });
+          const current = await currentResponse.json();
+          if (!currentResponse.ok || !current.sha) throw new Error("github_contents_read_failed_" + currentResponse.status + ": " + JSON.stringify(current));
+          const response = await fetch(url, {
+            method: "PUT",
+            headers,
+            body: JSON.stringify({
+              message: "fix: resolve high and critical npm audit advisories",
+              content: data,
+              sha: current.sha,
+              branch
+            })
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error("github_contents_update_failed_" + response.status + ": " + JSON.stringify(payload));
+          console.log(JSON.stringify({
+            commit_sha: payload.commit && payload.commit.sha,
+            previous_blob_sha: current.sha,
+            blob_sha: payload.content && payload.content.sha,
+            path: payload.content && payload.content.path,
+            branch
+          }, null, 2));
+          NODE
+      - name: Upload reviewed lockfile candidate and digests
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: gnw-lockfile-remediation-${{ github.run_id }}
+          path: dependency-remediation-evidence/
+          if-no-files-found: error
+          retention-days: 7
