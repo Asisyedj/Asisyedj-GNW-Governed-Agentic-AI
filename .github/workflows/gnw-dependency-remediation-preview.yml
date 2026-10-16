@@ -127,21 +127,24 @@ jobs:
           if (!token || !repository || branch !== "integration/evidence-governance-package-2026-10-17") {
             throw new Error("branch_or_token_guard_failed");
           }
-          const sha = execFileSync("git", ["rev-parse", "HEAD:gnw/package-lock.json"], { encoding: "utf8" }).trim();
           const data = fs.readFileSync("gnw/package-lock.json").toString("base64");
           const url = "https://api.github.com/repos/" + repository + "/contents/gnw/package-lock.json";
+          const headers = {
+            authorization: "Bearer " + token,
+            accept: "application/vnd.github+json",
+            "content-type": "application/json",
+            "x-github-api-version": "2022-11-28"
+          };
+          const currentResponse = await fetch(url + "?ref=" + encodeURIComponent(branch), { headers });
+          const current = await currentResponse.json();
+          if (!currentResponse.ok || !current.sha) throw new Error("github_contents_read_failed_" + currentResponse.status + ": " + JSON.stringify(current));
           const response = await fetch(url, {
             method: "PUT",
-            headers: {
-              authorization: "Bearer " + token,
-              accept: "application/vnd.github+json",
-              "content-type": "application/json",
-              "x-github-api-version": "2022-11-28"
-            },
+            headers,
             body: JSON.stringify({
               message: "fix: resolve high and critical npm audit advisories",
               content: data,
-              sha,
+              sha: current.sha,
               branch
             })
           });
@@ -149,6 +152,7 @@ jobs:
           if (!response.ok) throw new Error("github_contents_update_failed_" + response.status + ": " + JSON.stringify(payload));
           console.log(JSON.stringify({
             commit_sha: payload.commit && payload.commit.sha,
+            previous_blob_sha: current.sha,
             blob_sha: payload.content && payload.content.sha,
             path: payload.content && payload.content.path,
             branch
