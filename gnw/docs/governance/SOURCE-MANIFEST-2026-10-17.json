@@ -1,0 +1,82 @@
+{
+  "schema": "GNW.GovernanceSourceManifest.v1",
+  "assessment_date": "2026-10-17",
+  "repository": "Asisyedj/Asisyedj-GNW-Governed-Agentic-AI",
+  "branch": "integration/evidence-governance-package-2026-10-17",
+  "base_branch": "remediation/phase5-sandbox-sink-contracts-2026-09-15",
+  "base_commit": "7f408afc7e5feadc1649cc44e75ba8b2c0c5d162",
+  "integration_scope": "governance documentation only; no application code, deployment or production authorization",
+  "sources": [
+    {
+      "uploaded_name": "GNW_Architecture_Decisions_(ADRs).md",
+      "repository_path": "gnw/docs/governance/GNW_Architecture_Decisions_ADRs.md",
+      "sha256": "8e11f763e26ed8c3381a0aa620f4bc052e9dc86223d2f2000afdbbc20b34d565",
+      "bytes": 7939
+    },
+    {
+      "uploaded_name": "GNW_Evaluation_Specification.md",
+      "repository_path": "gnw/docs/governance/GNW_Evaluation_Specification.md",
+      "sha256": "78e0f91cbe8dcede992d84345ac25424b988566600110ea0200948e197607723",
+      "bytes": 8776
+    },
+    {
+      "uploaded_name": "GNW_Evidence_Ledger.md",
+      "repository_path": "gnw/docs/governance/GNW_Evidence_Ledger.md",
+      "sha256": "e3218e77b7765344cca0036d90f83985b5e2a21b9fc60250d3bc696a7e35321b",
+      "bytes": 10523
+    },
+    {
+      "uploaded_name": "GNW_Implementation_Backlog.md",
+      "repository_path": "gnw/docs/governance/GNW_Implementation_Backlog.md",
+      "sha256": "927cb112860f5999ea8a8eec678d7489cf707996ece06c02f63f079734c96386",
+      "bytes": 8420
+    },
+    {
+      "uploaded_name": "GNW_Requirements_Traceability_Matrix.md",
+      "repository_path": "gnw/docs/governance/GNW_Requirements_Traceability_Matrix.md",
+      "sha256": "4b930eb8cf5206d3a7ff43adcb73932c57dfb1274ac5278eff5b1d9207186a0b",
+      "bytes": 6902
+    },
+    {
+      "uploaded_name": "GNW_Risk_Register.md",
+      "repository_path": "gnw/docs/governance/GNW_Risk_Register.md",
+      "sha256": "110b2c44354fcf3b4bc1e862bad7742c814eb4bff4d4223f49a63a7589afb52d",
+      "bytes": 8098
+    }
+  ],
+  "duplicates": [
+    {
+      "uploaded_names": [
+        "GNW_Evaluation_Specification.md",
+        "GNW_Evaluation_Specification (1).md"
+      ],
+      "sha256": "78e0f91cbe8dcede992d84345ac25424b988566600110ea0200948e197607723",
+      "disposition": "byte-identical; one canonical repository copy"
+    }
+  ],
+  "excluded": [
+    {
+      "name": "GNW_Evidence-Governed_Research_Package.pdf",
+      "sha256": "dd85291366f44474216a343b1783270f46dd63684ae2515cc60d84ccd195c19d",
+      "bytes": 587690,
+      "disposition": "original PDF retained as separate source attachment; not included in this text-only documentation commit"
+    },
+    {
+      "name": "SKILL (1).md",
+      "sha256": "61b6b1dc44e4fe44d98f6c6eab760475a030fe1d907f64c819d286b28004ee52",
+      "disposition": "tool instruction material, not GNW product documentation"
+    },
+    {
+      "name": "SKILL (2).md",
+      "sha256": "c5bdfdb59247a1e9416cee577ff45a7acfa9dc2323a366fc3b44d234c0fcd2f7",
+      "disposition": "tool instruction material, not GNW product documentation"
+    }
+  ],
+  "validation": {
+    "source_integrity": "SHA-256 measured on uploaded files",
+    "repository_readback": "required after each commit",
+    "application_tests": "NOT_RUN",
+    "github_actions": "NOT_VERIFIED",
+    "production_release": "DENIED"
+  }
+}
