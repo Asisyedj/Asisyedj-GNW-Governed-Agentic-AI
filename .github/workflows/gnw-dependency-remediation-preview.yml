@@ -1,4 +1,4 @@
-name: GNW Dependency Remediation Preview
+name: GNW Dependency Remediation
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: gnw-dependency-remediation-${{ github.ref }}
@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Checkout exact commit (pinned SHA)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -92,6 +92,58 @@ jobs:
           cp gnw/package-lock.json dependency-remediation-evidence/package-lock.json
           sha256sum dependency-remediation-evidence/package-lock.json | tee dependency-remediation-evidence/artifact.sha256
 
+      - name: Commit audited lockfile fix to this integration branch only
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/integration/evidence-governance-package-2026-10-17'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only)"
+          if [[ -z "$changed" ]]; then
+            echo "No lockfile changes required."
+            exit 0
+          fi
+          if [[ "$changed" != "gnw/package-lock.json" ]]; then
+            echo "FAIL: remediation changed unexpected tracked paths: $changed" >&2
+            exit 2
+          fi
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import { execFileSync } from "node:child_process";
+          const token = process.env.GH_TOKEN;
+          const repository = process.env.GITHUB_REPOSITORY;
+          const branch = process.env.GITHUB_REF_NAME;
+          if (!token || !repository || branch !== "integration/evidence-governance-package-2026-10-17") {
+            throw new Error("branch_or_token_guard_failed");
+          }
+          const sha = execFileSync("git", ["rev-parse", "HEAD:gnw/package-lock.json"], { encoding: "utf8" }).trim();
+          const data = fs.readFileSync("gnw/package-lock.json").toString("base64");
+          const url = "https://api.github.com/repos/" + repository + "/contents/gnw/package-lock.json";
+          const response = await fetch(url, {
+            method: "PUT",
+            headers: {
+              authorization: "Bearer " + token,
+              accept: "application/vnd.github+json",
+              "content-type": "application/json",
+              "x-github-api-version": "2022-11-28"
+            },
+            body: JSON.stringify({
+              message: "fix: resolve high and critical npm audit advisories",
+              content: data,
+              sha,
+              branch
+            })
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error("github_contents_update_failed_" + response.status + ": " + JSON.stringify(payload));
+          console.log(JSON.stringify({
+            commit_sha: payload.commit && payload.commit.sha,
+            blob_sha: payload.content && payload.content.sha,
+            path: payload.content && payload.content.path,
+            branch
+          }, null, 2));
+          NODE
       - name: Upload reviewed lockfile candidate and digests
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
