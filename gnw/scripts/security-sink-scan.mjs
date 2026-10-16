@@ -25,14 +25,25 @@ if (unsafeNetworkFiles.length || missingGovernedImport.length) {
   process.exit(2);
 }
 
-const executionCallers = files.filter(file => /executeExternal\s*\(/.test(source.get(file)));
-const externalModules = ["llm.ts", "video.ts", "notify.ts", "storage.ts"].map(name => path.join(root, name));
-const missingExternalBoundary = externalModules.filter(file => {
+// External LLM, webhook, and video sinks use the durable-fence wrapper.
+// Accept the current executeFencedExternal() boundary rather than incorrectly
+// requiring the older executeExternal() name.
+const executionCallers = files.filter(file => /\\bexecute(?:Fenced)?External\\s*\\(/.test(source.get(file)));
+const externalModules = [
+  { name: "llm.ts", boundary: "executeFencedExternal" },
+  { name: "video.ts", boundary: "executeFencedExternal" },
+  { name: "notify.ts", boundary: "executeFencedExternal" },
+  { name: "storage.ts", boundary: null },
+].map(item => ({ ...item, file: path.join(root, item.name) }));
+const missingExternalBoundary = externalModules.filter(({ file, boundary }) => {
   const text = source.get(file) ?? "";
-  return !text.includes("governedFetch") || (path.basename(file) !== "storage.ts" && !text.includes("executeExternal"));
+  return !text.includes("governedFetch") || (boundary !== null && !text.includes(boundary));
 });
 if (missingExternalBoundary.length) {
-  console.error(`FAIL: expected external modules lack both governedFetch and executeExternal: ${missingExternalBoundary.join(",")}`);
+  console.error("FAIL: expected external modules are missing governed egress or their required execution boundary.");
+  for (const item of missingExternalBoundary) {
+    console.error(`missing_external_boundary=${item.file} required=${item.boundary ?? "governedFetch"}`);
+  }
   process.exit(2);
 }
 
