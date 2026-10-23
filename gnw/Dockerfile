@@ -1,7 +1,13 @@
 # syntax=docker/dockerfile:1
-FROM node:20-bookworm-slim AS build
+# Node.js 22.23.4 LTS on Alpine 3.23; immutable multi-arch manifest digest.
+ARG NODE_IMAGE=node:22.23.4-alpine3.23@sha256:6abbcf5dd6b231da109bcde1181db1d92bf78015ae1a9514d9807c1f857869db
+
+FROM ${NODE_IMAGE} AS build
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
+RUN apk upgrade --no-cache && apk add --no-cache python3 make g++ \
+ && musl_ver="$(apk info -v musl | sed -n 's/^musl-//p')" \
+ && test -n "$musl_ver" \
+ && test "$(apk version -t "$musl_ver" "1.2.5-r24")" != "<"
 COPY package.json package-lock.json* ./
 RUN npm ci
 COPY tsconfig.json vite.config.ts vitest.config.ts ./
@@ -9,17 +15,26 @@ COPY src ./src
 COPY tests ./tests
 RUN npm run typecheck && npm run build
 
-FROM node:20-bookworm-slim AS deps
+FROM ${NODE_IMAGE} AS deps
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
+RUN apk upgrade --no-cache && apk add --no-cache python3 make g++ \
+ && musl_ver="$(apk info -v musl | sed -n 's/^musl-//p')" \
+ && test -n "$musl_ver" \
+ && test "$(apk version -t "$musl_ver" "1.2.5-r24")" != "<"
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-FROM node:20-bookworm-slim AS runtime
+FROM ${NODE_IMAGE} AS runtime
 ENV NODE_ENV=production PORT=8787 DATA_DIR=/data
 ENV NODE_OPTIONS=--disable-proto=throw
 WORKDIR /app
-RUN useradd --system --uid 10001 --create-home gnw && mkdir -p /data && chown -R gnw:gnw /data
+RUN apk upgrade --no-cache && apk add --no-cache libstdc++ \
+ && musl_ver="$(apk info -v musl | sed -n 's/^musl-//p')" \
+ && test -n "$musl_ver" \
+ && test "$(apk version -t "$musl_ver" "1.2.5-r24")" != "<" \
+ && addgroup -S -g 10001 gnw \
+ && adduser -S -D -H -u 10001 -G gnw gnw \
+ && mkdir -p /data && chown -R gnw:gnw /data
 COPY --from=deps  --chown=gnw:gnw /app/node_modules ./node_modules
 COPY --from=build --chown=gnw:gnw /app/dist ./dist
 COPY --chown=gnw:gnw package.json ./
