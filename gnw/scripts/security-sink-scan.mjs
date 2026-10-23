@@ -29,7 +29,8 @@ const executionCallers = files.filter(file => /executeExternal\s*\(/.test(source
 const externalModules = ["llm.ts", "video.ts", "notify.ts", "storage.ts"].map(name => path.join(root, name));
 const missingExternalBoundary = externalModules.filter(file => {
   const text = source.get(file) ?? "";
-  return !text.includes("governedFetch") || (path.basename(file) !== "storage.ts" && !text.includes("executeExternal"));
+  const hasExecutionBoundary = /\bexecute(?:Fenced)?External\s*\(/.test(text);
+  return !text.includes("governedFetch") || (path.basename(file) !== "storage.ts" && !hasExecutionBoundary);
 });
 if (missingExternalBoundary.length) {
   console.error(`FAIL: expected external modules lack both governedFetch and executeExternal: ${missingExternalBoundary.join(",")}`);
