@@ -31,7 +31,19 @@ NODE_ENV=production npm run --silent typecheck >/dev/null
 
 echo "[7/10] container/staging gate"
 command -v docker >/dev/null || { echo "docker is required for the staging gate" >&2; exit 2; }
-docker build -t gnw-governed-agent:4.0.0 .
+command -v trivy >/dev/null || { echo "Trivy is required; container scan cannot be skipped" >&2; exit 2; }
+case "$(node --version)" in v22.*) ;; *) echo "Node.js 22 is required for release gates" >&2; exit 2 ;; esac
+candidate="$(git rev-parse --short=12 HEAD)"
+app_image="gnw-governed-agent:${candidate}"
+executor_image="gnw-governed-executor:${candidate}"
+docker build --pull --no-cache -t "$app_image" -f Dockerfile .
+docker build --pull --no-cache -t "$executor_image" -f Dockerfile.executor .
+for image in "$app_image" "$executor_image"; do
+  report="/tmp/$(printf '%s' "$image" | tr '/:' '--')-trivy.json"
+  echo "Scanning immutable candidate image $image; full report: $report"
+  trivy image --scanners vuln --format json --output "$report" "$image"
+  trivy image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --no-progress "$image"
+done
 
 echo "[8/10] 100-case evidence ledger gate"
 node scripts/validate-100-evidence.mjs

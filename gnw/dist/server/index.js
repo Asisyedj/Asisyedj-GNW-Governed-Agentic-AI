@@ -182,12 +182,14 @@ function loadEnv(source = process.env) {
     port: int(source.PORT, 8787),
     sessionSecret: source.SESSION_SECRET ?? (isProduction ? "" : "dev-insecure-secret-do-not-use-in-production"),
     databaseUrl: source.DATABASE_URL ?? "file:./data/gnw.db",
+    postgresSslRequired: bool(source.GNW_POSTGRES_SSL_REQUIRED, isProduction),
     ownerEmail: (source.OWNER_EMAIL ?? "").trim().toLowerCase(),
     ownerPassword: source.OWNER_PASSWORD ?? "",
     allowSelfRegistration: bool(source.ALLOW_SELF_REGISTRATION, false),
     llmBaseUrl: (source.LLM_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, ""),
     llmApiKey: source.LLM_API_KEY ?? "",
     llmModel: source.LLM_MODEL ?? "gpt-4o-mini",
+    llmProviderIdempotencyRequired: bool(source.GNW_LLM_IDEMPOTENCY_REQUIRED, isProduction),
     llmTimeoutMs: int(source.LLM_TIMEOUT_MS, 45e3),
     storageDriver: source.STORAGE_DRIVER ?? "local",
     artifactDir: source.ARTIFACT_DIR ?? "./data/artifacts",
@@ -202,7 +204,10 @@ function loadEnv(source = process.env) {
     videoProvider: source.VIDEO_PROVIDER ?? "stub",
     videoProviderUrl: source.VIDEO_PROVIDER_URL ?? "",
     videoProviderApiKey: source.VIDEO_PROVIDER_API_KEY ?? "",
+    videoProviderIdempotencyRequired: bool(source.VIDEO_PROVIDER_IDEMPOTENCY_REQUIRED, isProduction),
+    videoProviderFencingRequired: bool(source.VIDEO_PROVIDER_FENCING_REQUIRED, isProduction),
     notifyWebhookUrl: source.NOTIFY_WEBHOOK_URL ?? "",
+    notifyProviderIdempotencyRequired: bool(source.GNW_NOTIFY_IDEMPOTENCY_REQUIRED, isProduction),
     // "none" is required only when the client is served from a different origin
     // than the API; it forces Secure and therefore HTTPS.
     cookieSameSite: (source.COOKIE_SAME_SITE ?? "lax").toLowerCase(),
@@ -258,6 +263,7 @@ function assertProductionEnvironment(env = ENV) {
   if (!env.sessionSecret || env.sessionSecret.length < 32) failures.push("SESSION_SECRET must be set to at least 32 characters");
   if (!env.databaseUrl) failures.push("DATABASE_URL must be set");
   if (env.databaseUrl.startsWith("file:")) failures.push("SQLite is not an accepted production database; set a postgres:// DATABASE_URL");
+  if ((env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://")) && env.postgresSslRequired && !/sslmode=verify-full/i.test(env.databaseUrl)) failures.push("Production PostgreSQL requires sslmode=verify-full");
   if (!env.ownerEmail || !env.ownerPassword) failures.push("OWNER_EMAIL and OWNER_PASSWORD are required in production bootstrap");
   if (env.allowSelfRegistration) failures.push("ALLOW_SELF_REGISTRATION must be false in production");
   if (env.storageDriver !== "s3") failures.push("Production requires durable S3-compatible object storage; set STORAGE_DRIVER=s3");
@@ -267,8 +273,12 @@ function assertProductionEnvironment(env = ENV) {
   if (env.grantTtlMs <= 0 || env.grantTtlMs > env.maxGrantTtlMs) failures.push("GRANT_TTL_MS must be positive and <= MAX_GRANT_TTL_MS");
   if (env.capabilityLeaseTtlMs <= 0 || env.capabilityLeaseTtlMs > env.grantTtlMs) failures.push("GNW_CAPABILITY_LEASE_TTL_MS must be positive and <= GRANT_TTL_MS");
   if (env.llmApiKey && env.allowedEgressHosts.length === 0) failures.push("Configured LLM requires GNW_ALLOWED_EGRESS_HOSTS");
+  if (env.llmApiKey && !env.llmProviderIdempotencyRequired) failures.push("Configured LLM requires GNW_LLM_IDEMPOTENCY_REQUIRED=true in production");
   if (env.videoProviderUrl && env.allowedEgressHosts.length === 0) failures.push("Configured provider requires GNW_ALLOWED_EGRESS_HOSTS");
+  if (env.videoProviderUrl && !env.videoProviderIdempotencyRequired) failures.push("Configured provider requires VIDEO_PROVIDER_IDEMPOTENCY_REQUIRED=true in production");
+  if (env.videoProviderUrl && !env.videoProviderFencingRequired) failures.push("Configured provider requires VIDEO_PROVIDER_FENCING_REQUIRED=true in production");
   if (env.notifyWebhookUrl && env.allowedEgressHosts.length === 0) failures.push("Configured notification webhook requires GNW_ALLOWED_EGRESS_HOSTS");
+  if (env.notifyWebhookUrl && !env.notifyProviderIdempotencyRequired) failures.push("Configured notification webhook requires GNW_NOTIFY_IDEMPOTENCY_REQUIRED=true in production");
   if (env.s3.endpoint && env.allowedEgressHosts.length === 0) failures.push("Configured S3 endpoint requires GNW_ALLOWED_EGRESS_HOSTS");
   if (env.allowedEgressHosts.some((host) => host === "*" || host.startsWith("*.*"))) failures.push("Wildcard egress host policy is not permitted");
   if (env.executorRequired && (!env.executorUrl || !env.executorSharedToken)) failures.push("GNW_EXECUTOR_URL and GNW_EXECUTOR_SHARED_TOKEN are required when executor isolation is enabled");
@@ -284,7 +294,7 @@ import path from "node:path";
 function schemaStatements(dialect) {
   const pk = dialect === "postgres" ? "SERIAL PRIMARY KEY" : "INTEGER PRIMARY KEY AUTOINCREMENT";
   const ts = dialect === "postgres" ? "BIGINT" : "INTEGER";
-  return [
+  const statements = [
     `CREATE TABLE IF NOT EXISTS users (
       id ${pk},
       email TEXT NOT NULL UNIQUE,
@@ -392,9 +402,29 @@ function schemaStatements(dialect) {
       nonce TEXT NOT NULL UNIQUE,
       issuer TEXT NOT NULL,
       signature TEXT NOT NULL,
+      interlock_generation INTEGER NOT NULL DEFAULT 0,
       consumed_at ${ts}
     )`,
     `CREATE INDEX IF NOT EXISTS ix_capability_lease_task ON capability_leases (task_id, id)`,
+    `CREATE TABLE IF NOT EXISTS effect_fences (
+      id ${pk},
+      effect_key TEXT NOT NULL UNIQUE,
+      task_id INTEGER NOT NULL,
+      tenant TEXT NOT NULL,
+      capability TEXT NOT NULL,
+      action_digest TEXT NOT NULL,
+      interlock_generation INTEGER NOT NULL,
+      fence_token TEXT NOT NULL,
+      idempotency_key TEXT NOT NULL UNIQUE,
+      provider TEXT NOT NULL,
+      state TEXT NOT NULL CHECK (state IN ('READY','IN_FLIGHT','COMPLETED','PENDING_RECONCILIATION','FAILED')),
+      provider_effect_id TEXT,
+      response_digest TEXT,
+      attempt_count INTEGER NOT NULL DEFAULT 0,
+      created_at ${ts} NOT NULL,
+      updated_at ${ts} NOT NULL
+    )`,
+    `CREATE INDEX IF NOT EXISTS ix_effect_fences_task ON effect_fences (task_id, id)`,
     `CREATE TABLE IF NOT EXISTS budget_reservations (
       id ${pk}, task_id INTEGER NOT NULL, grant_nonce TEXT NOT NULL UNIQUE, tokens INTEGER NOT NULL, bytes INTEGER NOT NULL, created_at ${ts} NOT NULL
     )`,
@@ -499,6 +529,7 @@ function schemaStatements(dialect) {
       id ${pk},
       user_id INTEGER,
       task_id INTEGER,
+      tenant_key TEXT,
       title TEXT NOT NULL,
       body TEXT NOT NULL,
       channel TEXT NOT NULL,
@@ -511,6 +542,7 @@ function schemaStatements(dialect) {
       updated_by INTEGER,
       updated_at ${ts} NOT NULL
     )`,
+    `INSERT INTO system_controls (key, value, updated_by, updated_at) VALUES ('interlock_generation', '0', NULL, 0) ON CONFLICT (key) DO NOTHING`,
     `CREATE TABLE IF NOT EXISTS sessions (id ${pk}, user_id INTEGER NOT NULL, token_hash TEXT NOT NULL UNIQUE, issued_at ${ts} NOT NULL, expires_at ${ts} NOT NULL, revoked_at ${ts})`,
     `CREATE INDEX IF NOT EXISTS ix_sessions_user ON sessions (user_id, expires_at)`,
     `CREATE TABLE IF NOT EXISTS login_attempts (
@@ -522,6 +554,52 @@ function schemaStatements(dialect) {
     )`,
     `CREATE INDEX IF NOT EXISTS ix_login_attempts ON login_attempts (email, created_at)`
   ];
+  if (dialect === "postgres") {
+    statements.push(
+      `CREATE OR REPLACE FUNCTION gnw_current_tenant() RETURNS TEXT LANGUAGE SQL STABLE AS $$ SELECT NULLIF(current_setting('gnw.tenant_key', true), '') $$`,
+      `ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE workspaces FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE tasks ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE tasks FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE messages ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE messages FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE agent_runs ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE agent_runs FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE approvals ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE approvals FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE capability_leases ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE capability_leases FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE effect_fences ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE effect_fences FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE video_jobs ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE video_jobs FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE artifacts ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE artifacts FORCE ROW LEVEL SECURITY`,
+      `ALTER TABLE notifications ENABLE ROW LEVEL SECURITY`,
+      `ALTER TABLE notifications FORCE ROW LEVEL SECURITY`,
+      `DROP POLICY IF EXISTS gnw_workspaces_tenant ON workspaces`,
+      `CREATE POLICY gnw_workspaces_tenant ON workspaces USING (tenant_key = gnw_current_tenant()) WITH CHECK (tenant_key = gnw_current_tenant())`,
+      `DROP POLICY IF EXISTS gnw_tasks_tenant ON tasks`,
+      `CREATE POLICY gnw_tasks_tenant ON tasks USING (EXISTS (SELECT 1 FROM workspaces w WHERE w.id = tasks.workspace_id AND w.tenant_key = gnw_current_tenant())) WITH CHECK (EXISTS (SELECT 1 FROM workspaces w WHERE w.id = tasks.workspace_id AND w.tenant_key = gnw_current_tenant()))`,
+      `DROP POLICY IF EXISTS gnw_messages_tenant ON messages`,
+      `CREATE POLICY gnw_messages_tenant ON messages USING (EXISTS (SELECT 1 FROM tasks t WHERE t.id = messages.task_id)) WITH CHECK (EXISTS (SELECT 1 FROM tasks t WHERE t.id = messages.task_id))`,
+      `DROP POLICY IF EXISTS gnw_agent_runs_tenant ON agent_runs`,
+      `CREATE POLICY gnw_agent_runs_tenant ON agent_runs USING (EXISTS (SELECT 1 FROM tasks t WHERE t.id = agent_runs.task_id)) WITH CHECK (EXISTS (SELECT 1 FROM tasks t WHERE t.id = agent_runs.task_id))`,
+      `DROP POLICY IF EXISTS gnw_approvals_tenant ON approvals`,
+      `CREATE POLICY gnw_approvals_tenant ON approvals USING (EXISTS (SELECT 1 FROM tasks t WHERE t.id = approvals.task_id)) WITH CHECK (EXISTS (SELECT 1 FROM tasks t WHERE t.id = approvals.task_id))`,
+      `DROP POLICY IF EXISTS gnw_leases_tenant ON capability_leases`,
+      `CREATE POLICY gnw_leases_tenant ON capability_leases USING (tenant = gnw_current_tenant()) WITH CHECK (tenant = gnw_current_tenant())`,
+      `DROP POLICY IF EXISTS gnw_effect_fences_tenant ON effect_fences`,
+      `CREATE POLICY gnw_effect_fences_tenant ON effect_fences USING (tenant = gnw_current_tenant()) WITH CHECK (tenant = gnw_current_tenant())`,
+      `DROP POLICY IF EXISTS gnw_video_jobs_tenant ON video_jobs`,
+      `CREATE POLICY gnw_video_jobs_tenant ON video_jobs USING (EXISTS (SELECT 1 FROM tasks t WHERE t.id = video_jobs.task_id)) WITH CHECK (EXISTS (SELECT 1 FROM tasks t WHERE t.id = video_jobs.task_id))`,
+      `DROP POLICY IF EXISTS gnw_artifacts_tenant ON artifacts`,
+      `CREATE POLICY gnw_artifacts_tenant ON artifacts USING (EXISTS (SELECT 1 FROM tasks t WHERE t.id = artifacts.task_id)) WITH CHECK (EXISTS (SELECT 1 FROM tasks t WHERE t.id = artifacts.task_id))`,
+      `DROP POLICY IF EXISTS gnw_notifications_tenant ON notifications`,
+      `CREATE POLICY gnw_notifications_tenant ON notifications USING (tenant_key = gnw_current_tenant()) WITH CHECK (tenant_key = gnw_current_tenant())`
+    );
+  }
+  return statements;
 }
 
 // src/server/db/index.ts
@@ -534,6 +612,57 @@ var UniqueViolation = class extends Error {
 function toPgSql(sql) {
   let index = 0;
   return sql.replace(/\?/g, () => `$${++index}`);
+}
+function withTenant(base, tenantKey) {
+  if (base.tenantKey === tenantKey) return base;
+  const scoped = (tx) => withTenant(tx, tenantKey);
+  const setTenant = async (tx) => {
+    if (tx.dialect === "postgres") await tx.run("SELECT set_config('gnw.tenant_key', ?, true)", [tenantKey]);
+  };
+  return {
+    dialect: base.dialect,
+    tenantKey,
+    async all(sql, params = []) {
+      if (base.dialect === "sqlite") return base.all(sql, params);
+      return base.transaction(async (tx) => {
+        await setTenant(tx);
+        return tx.all(sql, params);
+      });
+    },
+    async get(sql, params = []) {
+      if (base.dialect === "sqlite") return base.get(sql, params);
+      return base.transaction(async (tx) => {
+        await setTenant(tx);
+        return tx.get(sql, params);
+      });
+    },
+    async run(sql, params = []) {
+      if (base.dialect === "sqlite") return base.run(sql, params);
+      return base.transaction(async (tx) => {
+        await setTenant(tx);
+        return tx.run(sql, params);
+      });
+    },
+    async insert(sql, params = []) {
+      if (base.dialect === "sqlite") return base.insert(sql, params);
+      return base.transaction(async (tx) => {
+        await setTenant(tx);
+        return tx.insert(sql, params);
+      });
+    },
+    async transaction(fn) {
+      return base.transaction(async (tx) => {
+        await setTenant(tx);
+        return fn(scoped(tx));
+      });
+    },
+    withTenant(nextTenant) {
+      return withTenant(base, nextTenant);
+    },
+    async close() {
+      return base.close();
+    }
+  };
 }
 function isUniqueViolation(error) {
   const message = error instanceof Error ? error.message : String(error);
@@ -586,6 +715,9 @@ async function createSqlite(url) {
         throw error;
       }
     },
+    withTenant(tenantKey) {
+      return withTenant(this, tenantKey);
+    },
     async close() {
       handle.close();
     }
@@ -597,7 +729,7 @@ async function createPostgres(url) {
     connectionString: url,
     max: 10,
     idleTimeoutMillis: 3e4,
-    ssl: /sslmode=require/.test(url) ? { rejectUnauthorized: true } : void 0
+    ssl: /sslmode=(require|verify-full)/i.test(url) ? { rejectUnauthorized: true } : void 0
   });
   const query = async (sql, params) => {
     try {
@@ -632,6 +764,7 @@ async function createPostgres(url) {
         run: async (sql, params = []) => ({ changes: (await client.query(toPgSql(sql), params)).rowCount ?? 0 }),
         insert: async (sql, params = []) => Number((await client.query(`${toPgSql(sql)} RETURNING id`, params)).rows[0].id),
         transaction: async (nested) => nested(txDb),
+        withTenant: (tenantKey) => withTenant(txDb, tenantKey),
         close: async () => void 0
       };
       let released = false;
@@ -657,6 +790,9 @@ async function createPostgres(url) {
         safeRelease();
       }
     },
+    withTenant(tenantKey) {
+      return withTenant(this, tenantKey);
+    },
     async close() {
       await pool.end();
     }
@@ -670,6 +806,21 @@ async function migrate(db) {
   for (const statement of schemaStatements(db.dialect)) {
     await db.run(statement);
   }
+  try {
+    await db.run("ALTER TABLE capability_leases ADD COLUMN interlock_generation INTEGER NOT NULL DEFAULT 0");
+  } catch (error) {
+    const code = error?.code;
+    const message = error instanceof Error ? error.message : String(error);
+    if (code !== "42701" && !/duplicate column name|already exists/i.test(message)) throw error;
+  }
+  try {
+    await db.run("ALTER TABLE notifications ADD COLUMN tenant_key TEXT");
+  } catch (error) {
+    const code = error?.code;
+    const message = error instanceof Error ? error.message : String(error);
+    if (code !== "42701" && !/duplicate column name|already exists/i.test(message)) throw error;
+  }
+  await db.run("INSERT INTO system_controls (key, value, updated_by, updated_at) VALUES ('interlock_generation', '0', NULL, 0) ON CONFLICT (key) DO NOTHING");
 }
 var instance = null;
 function getDb(env = ENV) {
@@ -888,9 +1039,12 @@ async function listArtifacts(db, taskId) {
   return db.all("SELECT * FROM artifacts WHERE task_id = ? ORDER BY id ASC", [taskId]);
 }
 async function recordNotification(db, input) {
-  return db.insert("INSERT INTO notifications (user_id, task_id, title, body, channel, delivered, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+  const tenantKey = input.tenantKey ?? (input.taskId ? (await getTaskExecutionContext(db, input.taskId))?.tenant : null);
+  if (!tenantKey) throw new Error("notification_tenant_required");
+  return db.insert("INSERT INTO notifications (user_id, task_id, tenant_key, title, body, channel, delivered, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
     input.userId ?? null,
     input.taskId ?? null,
+    tenantKey,
     input.title,
     input.body,
     input.channel,
@@ -911,7 +1065,7 @@ async function claimNonce(db, kind, nonce, taskId) {
   }
 }
 async function createCapabilityLease(db, input) {
-  await db.insert(`INSERT INTO capability_leases (lease_id, request_id, action_digest, subject, tenant, task_id, actor_user_id, capability, destination, issued_at, expires_at, nonce, issuer, signature) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+  await db.insert(`INSERT INTO capability_leases (lease_id, request_id, action_digest, subject, tenant, task_id, actor_user_id, capability, destination, issued_at, expires_at, nonce, issuer, signature, interlock_generation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
     input.leaseId,
     input.requestId,
     input.actionDigest,
@@ -925,7 +1079,8 @@ async function createCapabilityLease(db, input) {
     input.expiresAt,
     input.nonce,
     input.issuer,
-    input.signature
+    input.signature,
+    input.interlockGeneration
   ]);
   return input;
 }
@@ -934,20 +1089,71 @@ async function consumeCapabilityLease(db, leaseId, nowMs = now()) {
   return result.changes > 0;
 }
 async function getInterlock(db) {
-  const rows = await db.all("SELECT key, value FROM system_controls WHERE key IN ('kill_switch', 'circuit_open')");
+  const rows = await db.all("SELECT key, value FROM system_controls WHERE key IN ('kill_switch', 'circuit_open', 'interlock_generation')");
   const map = new Map(rows.map((row) => [row.key, row.value]));
-  return { killSwitch: map.get("kill_switch") === "true", circuitOpen: map.get("circuit_open") === "true" };
+  return { killSwitch: map.get("kill_switch") === "true", circuitOpen: map.get("circuit_open") === "true", generation: Number(map.get("interlock_generation") ?? 0) };
 }
 async function setInterlock(db, values, updatedBy) {
   const entries = [["kill_switch", values.killSwitch], ["circuit_open", values.circuitOpen]];
   await db.transaction(async (tx) => {
+    let changed = false;
     for (const [key, value] of entries) {
       if (value === void 0) continue;
+      changed = true;
       const stamp = now();
       await tx.run("INSERT INTO system_controls (key, value, updated_by, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_by = excluded.updated_by, updated_at = excluded.updated_at", [key, String(value), updatedBy, stamp]);
     }
+    if (changed) {
+      const current = await tx.get(tx.dialect === "postgres" ? "SELECT value FROM system_controls WHERE key = 'interlock_generation' FOR UPDATE" : "SELECT value FROM system_controls WHERE key = 'interlock_generation'");
+      const next = Number(current?.value ?? 0) + 1;
+      await tx.run("INSERT INTO system_controls (key, value, updated_by, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_by = excluded.updated_by, updated_at = excluded.updated_at", ["interlock_generation", String(next), updatedBy, now()]);
+    }
   });
   return getInterlock(db);
+}
+async function getTaskExecutionContext(db, taskId) {
+  return db.get(
+    "SELECT t.id AS taskId, w.tenant_key AS tenant FROM tasks t INNER JOIN workspaces w ON w.id = t.workspace_id WHERE t.id = ?",
+    [taskId]
+  );
+}
+async function getEffectFence(db, effectKey) {
+  return db.get("SELECT * FROM effect_fences WHERE effect_key = ?", [effectKey]);
+}
+async function createEffectFence(db, input) {
+  try {
+    await db.insert(
+      "INSERT INTO effect_fences (effect_key, task_id, tenant, capability, action_digest, interlock_generation, fence_token, idempotency_key, provider, state, attempt_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'READY', 0, ?, ?)",
+      [input.effectKey, input.taskId, input.tenant, input.capability, input.actionDigest, input.interlockGeneration, input.fenceToken, input.idempotencyKey, input.provider, now(), now()]
+    );
+  } catch (error) {
+    if (!(error instanceof UniqueViolation)) throw error;
+  }
+  return getEffectFence(db, input.effectKey);
+}
+async function claimEffectFence(db, effectKey, generation) {
+  if (db.dialect === "sqlite") {
+    const result = await db.run(
+      "UPDATE effect_fences SET state = 'IN_FLIGHT', attempt_count = attempt_count + 1, updated_at = ? WHERE effect_key = ? AND state = 'READY' AND interlock_generation = ? AND ? = CAST((SELECT value FROM system_controls WHERE key = 'interlock_generation') AS INTEGER)",
+      [now(), effectKey, generation, generation]
+    );
+    return result.changes > 0;
+  }
+  return db.transaction(async (tx) => {
+    const control = await tx.get(tx.dialect === "postgres" ? "SELECT value FROM system_controls WHERE key = 'interlock_generation' FOR UPDATE" : "SELECT value FROM system_controls WHERE key = 'interlock_generation'");
+    if (Number(control?.value ?? 0) !== generation) return false;
+    const result = await tx.run(
+      "UPDATE effect_fences SET state = 'IN_FLIGHT', attempt_count = attempt_count + 1, updated_at = ? WHERE effect_key = ? AND state = 'READY' AND interlock_generation = ?",
+      [now(), effectKey, generation]
+    );
+    return result.changes > 0;
+  });
+}
+async function completeEffectFence(db, effectKey, providerEffectId, responseDigest) {
+  await db.run("UPDATE effect_fences SET state = 'COMPLETED', provider_effect_id = ?, response_digest = ?, updated_at = ? WHERE effect_key = ? AND state = 'IN_FLIGHT'", [providerEffectId, responseDigest, now(), effectKey]);
+}
+async function reconcileEffectFence(db, effectKey, providerEffectId, responseDigest) {
+  await db.run("UPDATE effect_fences SET state = 'PENDING_RECONCILIATION', provider_effect_id = COALESCE(?, provider_effect_id), response_digest = COALESCE(?, response_digest), updated_at = ? WHERE effect_key = ? AND state = 'IN_FLIGHT'", [providerEffectId, responseDigest, now(), effectKey]);
 }
 async function reserveBudget(db, taskId, grantNonce, tokens, bytes) {
   return db.transaction(async (tx) => {
@@ -1102,7 +1308,8 @@ function issueCapabilityLease(input, now2 = Date.now()) {
     issuedAt: now2,
     expiresAt: now2 + input.ttlMs,
     nonce: randomUUID(),
-    issuer: input.issuer
+    issuer: input.issuer,
+    interlockGeneration: input.interlockGeneration ?? 0
   };
   const signed = signGrant(lease, input.issuer, input.privateKeyPem);
   return { ...lease, issuer: signed.issuer, signature: signed.signature };
@@ -1110,6 +1317,7 @@ function issueCapabilityLease(input, now2 = Date.now()) {
 function verifyCapabilityLease(lease, publicKeyPem, now2 = Date.now(), expectedAudience) {
   if (!Number.isInteger(lease.issuedAt) || !Number.isInteger(lease.expiresAt) || lease.expiresAt <= lease.issuedAt || now2 < lease.issuedAt || now2 >= lease.expiresAt) return false;
   if (!lease.leaseId || !lease.nonce || !lease.requestId || !lease.actionDigest || !lease.subject || !lease.tenant || !lease.capability || !lease.signature || !lease.issuer) return false;
+  if (!Number.isInteger(lease.interlockGeneration) || lease.interlockGeneration < 0) return false;
   if (expectedAudience !== void 0 && (lease.destination ?? null) !== (expectedAudience ?? null)) return false;
   return verifyGrantSignature(lease, lease.issuer, lease.signature, publicKeyPem);
 }
@@ -1281,6 +1489,7 @@ var GovernanceService = class {
           capability: request.capability ?? request.tool,
           destination: typeof request.providerParameters?.endpoint === "string" ? request.providerParameters.endpoint : null,
           ttlMs: Math.min(this.leaseSigner.ttlMs, Math.max(1, request.expiresAt - now2)),
+          interlockGeneration: interlock.generation ?? 0,
           issuer: this.leaseSigner.issuer,
           privateKeyPem: this.leaseSigner.privateKeyPem
         }, now2);
@@ -1319,26 +1528,55 @@ var ExecutionDenied = class extends Error {
   reason;
   stop;
 };
-async function assertFinalInterlock(db) {
+async function assertFinalInterlock(db, expectedGeneration) {
   const state = await getInterlock(db);
   if (state.killSwitch || state.circuitOpen) throw new ExecutionDenied("safety_interlock", true);
+  if (expectedGeneration !== void 0 && state.generation !== expectedGeneration) throw new ExecutionDenied("stale_interlock_generation", true);
 }
 async function executeExternal(p) {
   try {
     const lease = p.capabilityLease;
     if (!verifyCapabilityLease(lease, p.env.grantPublicKeyPem, Date.now(), p.destination ?? null)) throw new ExecutionDenied("invalid_capability_lease");
-    if (lease.taskId !== p.taskId || lease.actorUserId !== p.actorUserId || lease.actionDigest !== p.actionDigest || lease.capability !== p.capability) throw new ExecutionDenied("capability_binding");
+    const taskContext = await getTaskExecutionContext(p.db, p.taskId);
+    if (!taskContext || lease.taskId !== p.taskId || lease.actorUserId !== p.actorUserId || lease.subject !== String(p.actorUserId) || lease.tenant !== taskContext.tenant || lease.actionDigest !== p.actionDigest || lease.capability !== p.capability) throw new ExecutionDenied("capability_binding");
     if (!await consumeCapabilityLease(p.db, lease.leaseId)) throw new ExecutionDenied("capability_replay");
-    await assertFinalInterlock(p.db);
+    await assertFinalInterlock(p.db, lease.interlockGeneration);
     if (p.destination) assertEgressUrl(p.destination, p.env.allowedEgressHosts);
     await appendAudit(p.db, { taskId: p.taskId, actorUserId: p.actorUserId, eventType: `${p.eventType}_effect_admission`, decision: "ALLOW", reason: "capability_lease_and_final_interlock_passed", payload: { actionDigest: p.actionDigest, capability: lease.capability, leaseId: lease.leaseId, destination: p.destination ?? null } });
-    await assertFinalInterlock(p.db);
+    await assertFinalInterlock(p.db, lease.interlockGeneration);
     const result = await p.effect();
     await appendAudit(p.db, { taskId: p.taskId, actorUserId: p.actorUserId, eventType: `${p.eventType}_effect_result`, decision: "ALLOW", reason: "external_effect_completed", payload: { actionDigest: p.actionDigest, leaseId: lease.leaseId } });
     return result;
   } catch (error) {
     await appendAudit(p.db, { taskId: p.taskId, actorUserId: p.actorUserId, eventType: `${p.eventType}_effect_blocked`, decision: error instanceof ExecutionDenied && error.stop ? "STOP" : "DENY", reason: error instanceof Error ? error.message : "external_effect_failed", payload: { actionDigest: p.actionDigest } }).catch(() => void 0);
     throw error;
+  }
+}
+async function executeFencedExternal(p) {
+  const lease = p.capabilityLease;
+  if (!verifyCapabilityLease(lease, p.env.grantPublicKeyPem, Date.now())) throw new ExecutionDenied("invalid_capability_lease");
+  if (lease.taskId !== p.taskId || lease.actorUserId !== p.actorUserId || lease.subject !== String(p.actorUserId) || lease.tenant !== p.tenant || lease.actionDigest !== p.actionDigest || lease.capability !== p.capability) throw new ExecutionDenied("capability_binding");
+  const current = await getInterlock(p.db);
+  if (current.killSwitch || current.circuitOpen) throw new ExecutionDenied("safety_interlock", true);
+  if (current.generation !== lease.interlockGeneration) throw new ExecutionDenied("stale_interlock_generation", true);
+  if (!await consumeCapabilityLease(p.db, lease.leaseId)) throw new ExecutionDenied("capability_replay");
+  const fenceToken = sha256(`GNW-FENCE-V1|${p.tenant}|${p.taskId}|${p.effectKey}|${current.generation}`);
+  const existing = await createEffectFence(p.db, { effectKey: p.effectKey, taskId: p.taskId, tenant: p.tenant, capability: p.capability, actionDigest: p.actionDigest, interlockGeneration: current.generation, fenceToken, idempotencyKey: p.idempotencyKey, provider: p.provider });
+  if (!existing) throw new ExecutionDenied("effect_fence_unavailable");
+  if (existing.action_digest !== p.actionDigest || existing.tenant !== p.tenant || existing.idempotency_key !== p.idempotencyKey || existing.fence_token !== fenceToken) throw new ExecutionDenied("effect_fence_binding");
+  if (existing.state === "COMPLETED") return { status: "COMPLETED", result: void 0, providerEffectId: existing.provider_effect_id, effectKey: p.effectKey, idempotencyKey: p.idempotencyKey, fenceToken };
+  if (existing.state === "PENDING_RECONCILIATION" || existing.state === "IN_FLIGHT") return { status: "PENDING_RECONCILIATION", effectKey: p.effectKey, idempotencyKey: p.idempotencyKey, fenceToken };
+  if (!await claimEffectFence(p.db, p.effectKey, current.generation)) return { status: "PENDING_RECONCILIATION", effectKey: p.effectKey, idempotencyKey: p.idempotencyKey, fenceToken };
+  await appendAudit(p.db, { taskId: p.taskId, actorUserId: p.actorUserId, eventType: `${p.eventType}_fence_claimed`, decision: "ALLOW", reason: "atomic_effect_fence_claimed", payload: { effectKey: p.effectKey, idempotencyKey: p.idempotencyKey, fenceToken } });
+  try {
+    const result = await p.effect(fenceToken, p.idempotencyKey, current.generation);
+    await completeEffectFence(p.db, p.effectKey, result.providerEffectId ?? null, result.responseDigest ?? null);
+    await appendAudit(p.db, { taskId: p.taskId, actorUserId: p.actorUserId, eventType: `${p.eventType}_fence_completed`, decision: "ALLOW", reason: "provider_effect_completed", payload: { effectKey: p.effectKey, idempotencyKey: p.idempotencyKey, fenceToken, providerEffectId: result.providerEffectId ?? null } });
+    return { status: "COMPLETED", result: result.result, effectKey: p.effectKey, idempotencyKey: p.idempotencyKey, fenceToken };
+  } catch (error) {
+    await reconcileEffectFence(p.db, p.effectKey, null, null);
+    await appendAudit(p.db, { taskId: p.taskId, actorUserId: p.actorUserId, eventType: `${p.eventType}_fence_pending_reconciliation`, decision: "DENY", reason: error instanceof Error ? error.message : "provider_ambiguous_failure", payload: { effectKey: p.effectKey, idempotencyKey: p.idempotencyKey, fenceToken } }).catch(() => void 0);
+    return { status: "PENDING_RECONCILIATION", effectKey: p.effectKey, idempotencyKey: p.idempotencyKey, fenceToken };
   }
 }
 
@@ -1350,23 +1588,30 @@ async function invokeLLM(input) {
     return { text: offlineResponse(input.messages), mode: "offline", model: "governed-offline" };
   }
   if (!input.db || input.taskId === void 0 || input.actorUserId === void 0 || !input.actionDigest || !input.capabilityLease) throw new Error("llm_capability_lease_required");
-  return executeExternal({
+  const tenant = input.capabilityLease.tenant;
+  const requestDigest = sha256(JSON.stringify({ model: env.llmModel, messages: input.messages, maxTokens: input.maxTokens ?? 1200, temperature: input.temperature ?? 0.2 }));
+  const effectKey = `llm:${tenant}:${input.taskId}:${requestDigest}`;
+  const idempotencyKey = sha256(`GNW-LLM-IDEMPOTENCY-V1|${tenant}|${input.taskId}|${input.actionDigest}|${requestDigest}`);
+  const fenced = await executeFencedExternal({
     db: input.db,
     env,
     taskId: input.taskId,
     actorUserId: input.actorUserId,
+    tenant,
     eventType: "llm_provider",
     actionDigest: input.actionDigest,
     capabilityLease: input.capabilityLease,
     capability: "llm.chat",
-    destination: env.llmBaseUrl,
-    effect: async () => {
+    provider: env.llmModel,
+    effectKey,
+    idempotencyKey,
+    effect: async (fenceToken, providerIdempotencyKey, generation) => {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), env.llmTimeoutMs);
       try {
         const response = await governedFetch(`${env.llmBaseUrl}/chat/completions`, {
           method: "POST",
-          headers: { "content-type": "application/json", authorization: `Bearer ${env.llmApiKey}` },
+          headers: { "content-type": "application/json", authorization: `Bearer ${env.llmApiKey}`, "idempotency-key": providerIdempotencyKey, "x-gnw-fence-generation": String(generation), "x-gnw-fence-token": fenceToken },
           body: JSON.stringify({
             model: env.llmModel,
             messages: input.messages,
@@ -1387,17 +1632,17 @@ async function invokeLLM(input) {
         const content = payload.choices?.[0]?.message?.content;
         const text = typeof content === "string" ? content : Array.isArray(content) ? content.map((part) => part?.text ?? "").join("\n") : "";
         if (!text.trim()) throw new Error("llm_empty_response");
-        return {
-          text,
-          mode: "live",
-          model: env.llmModel,
-          usage: { promptTokens: payload.usage?.prompt_tokens, completionTokens: payload.usage?.completion_tokens }
-        };
+        if (env.llmProviderIdempotencyRequired && response.headers.get("x-gnw-idempotency-key") !== providerIdempotencyKey) throw new Error("llm_idempotency_contract_not_confirmed");
+        if (env.llmProviderIdempotencyRequired && response.headers.get("x-gnw-fence-token") !== fenceToken) throw new Error("llm_fence_contract_not_confirmed");
+        const result = { text, mode: "live", model: env.llmModel, usage: { promptTokens: payload.usage?.prompt_tokens, completionTokens: payload.usage?.completion_tokens } };
+        return { result, responseDigest: sha256(raw) };
       } finally {
         clearTimeout(timer);
       }
     }
   });
+  if (fenced.status !== "COMPLETED" || !fenced.result) throw new Error("llm_effect_pending_reconciliation");
+  return fenced.result;
 }
 function offlineResponse(messages) {
   const system = messages.find((message) => message.role === "system")?.content ?? "";
@@ -1425,34 +1670,45 @@ async function notifyOwner(db, notification, env = ENV, capabilityLease, actionD
   let delivered = false;
   if (env.notifyWebhookUrl && capabilityLease && actionDigest) {
     try {
-      await executeExternal({
+      const tenant = capabilityLease.tenant;
+      const notificationDigest = sha256(JSON.stringify({ ...notification, webhook: env.notifyWebhookUrl }));
+      const effectKey = `notification:${tenant}:${notification.taskId ?? 0}:${notificationDigest}`;
+      const idempotencyKey = sha256(`GNW-NOTIFICATION-IDEMPOTENCY-V1|${tenant}|${notification.taskId ?? 0}|${actionDigest}|${notificationDigest}`);
+      const fenced = await executeFencedExternal({
         db,
         env,
         taskId: notification.taskId ?? 0,
         actorUserId: notification.userId ?? 0,
+        tenant,
         eventType: "owner_notification",
         actionDigest,
         capabilityLease,
         capability: "owner_notification",
-        destination: env.notifyWebhookUrl,
-        effect: async () => {
+        provider: env.notifyWebhookUrl,
+        effectKey,
+        idempotencyKey,
+        effect: async (fenceToken, providerIdempotencyKey, generation) => {
           const controller = new AbortController();
           const timer = setTimeout(() => controller.abort(), 8e3);
           try {
-            return await governedFetch(env.notifyWebhookUrl, {
+            const response = await governedFetch(env.notifyWebhookUrl, {
               method: "POST",
-              headers: { "content-type": "application/json" },
+              headers: { "content-type": "application/json", "idempotency-key": providerIdempotencyKey, "x-gnw-fence-generation": String(generation), "x-gnw-fence-token": fenceToken },
               body: JSON.stringify({ source: "gnw-governed-agent", ...notification, sentAt: (/* @__PURE__ */ new Date()).toISOString() }),
               signal: controller.signal,
               redirect: "manual",
               __allowedHosts: env.allowedEgressHosts
             }, env.maxProviderResponseBytes);
+            if (!response.ok) throw new Error(`notification_http_${response.status}`);
+            if (env.notifyProviderIdempotencyRequired && response.headers.get("x-gnw-idempotency-key") !== providerIdempotencyKey) throw new Error("notification_idempotency_contract_not_confirmed");
+            if (env.notifyProviderIdempotencyRequired && response.headers.get("x-gnw-fence-token") !== fenceToken) throw new Error("notification_fence_contract_not_confirmed");
+            return { result: { status: response.status }, responseDigest: sha256(`${response.status}|${providerIdempotencyKey}|${fenceToken}`) };
           } finally {
             clearTimeout(timer);
           }
         }
       });
-      delivered = true;
+      delivered = fenced.status === "COMPLETED";
     } catch (error) {
       console.warn(JSON.stringify({ level: "warn", event: "notification_delivery_failed", detail: String(error) }));
     }
@@ -2308,7 +2564,19 @@ async function submitApprovedVideoJob(db, user, approvalId, env = ENV) {
   await updateVideoJob(db, jobId, { status: "approved" });
   try {
     await updateVideoJob(db, jobId, { status: "queued", startedAt: Date.now() });
-    const submission = await executeExternal({ db, env, taskId: approval.task_id, actorUserId: user.id, eventType: "provider_submission", actionDigest: decision.actionDigest, destination: env.videoProviderUrl || void 0, capabilityLease: decision.capabilityLease, capability: "video.provider_job", effect: () => submitToProvider({ jobId, brief: job.brief ?? "", script: job.script ?? "", storyboard: job.storyboard ?? "" }, env) });
+    const tenant = user.tenantKey;
+    const effectKey = `video-provider:${tenant}:${jobId}`;
+    const idempotencyKey = sha2563(`GNW-PROVIDER-IDEMPOTENCY-V1|${tenant}|${jobId}|${decision.actionDigest}`);
+    const fenced = await executeFencedExternal({ db, env, taskId: approval.task_id, actorUserId: user.id, tenant, eventType: "provider_submission", actionDigest: decision.actionDigest, capabilityLease: decision.capabilityLease, capability: "video.provider_job", provider: env.videoProvider, effectKey, idempotencyKey, effect: (fenceToken, providerIdempotencyKey, generation) => submitToProvider({ jobId, brief: job.brief ?? "", script: job.script ?? "", storyboard: job.storyboard ?? "" }, env, { fenceToken, idempotencyKey: providerIdempotencyKey, generation }) });
+    if (fenced.status === "PENDING_RECONCILIATION") {
+      await updateVideoJob(db, jobId, { status: "queued", errorMessage: "provider_submission_pending_reconciliation" });
+      return { ok: false, status: "DENY", reason: "provider_submission_pending_reconciliation" };
+    }
+    const submission = fenced.result ?? (fenced.providerEffectId ? { providerJobId: fenced.providerEffectId, provider: env.videoProvider, completesImmediately: false } : null);
+    if (!submission) {
+      await updateVideoJob(db, jobId, { status: "queued", errorMessage: "provider_effect_completed_without_effect_id" });
+      return { ok: false, status: "DENY", reason: "provider_effect_completed_without_effect_id" };
+    }
     await updateVideoJob(db, jobId, { status: "generating", providerJobId: submission.providerJobId, errorMessage: null });
     await createMessage(db, { taskId: approval.task_id, role: "system", agentName: "video_producer", content: `Provider job ${submission.providerJobId} submitted after human approval. Status: generating.` });
     await appendAudit(db, { taskId: approval.task_id, actorUserId: user.id, eventType: "provider_job_submitted", decision: "ALLOW", reason: "approved_submission", payload: { jobId, providerJobId: submission.providerJobId, provider: submission.provider } });
@@ -2329,22 +2597,25 @@ async function deny(db, user, taskId, approvalId, reason) {
   await appendAudit(db, { taskId, actorUserId: user.id, eventType: "provider_submission_admission", decision: "DENY", reason, payload: { approvalId } });
   return { ok: false, status: "DENY", reason };
 }
-async function submitToProvider(job, env) {
+async function submitToProvider(job, env, fence) {
   if (!env.videoProviderUrl) {
-    return { providerJobId: `stub-${randomUUID5()}`, provider: "stub", completesImmediately: true };
+    const providerJobId = `stub-${randomUUID5()}`;
+    return { result: { providerJobId, provider: "stub", completesImmediately: true }, providerEffectId: providerJobId, responseDigest: sha2563(JSON.stringify({ providerJobId, fence: fence.fenceToken, idempotencyKey: fence.idempotencyKey })) };
   }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 3e4);
   try {
     const response = await governedFetch(env.videoProviderUrl, {
       method: "POST",
-      headers: { "content-type": "application/json", ...env.videoProviderApiKey ? { authorization: `Bearer ${env.videoProviderApiKey}` } : {} },
+      headers: { "content-type": "application/json", "idempotency-key": fence.idempotencyKey, "x-gnw-fence-generation": String(fence.generation), "x-gnw-fence-token": fence.fenceToken, ...env.videoProviderApiKey ? { authorization: `Bearer ${env.videoProviderApiKey}` } : {} },
       body: JSON.stringify({ reference: `gnw-video-${job.jobId}`, brief: job.brief, script: job.script, storyboard: job.storyboard }),
       redirect: "manual",
       signal: controller.signal,
       __allowedHosts: env.allowedEgressHosts
     }, env.maxProviderResponseBytes);
     if (!response.ok) throw new Error(`provider_http_${response.status}: ${(await response.text()).slice(0, 300)}`);
+    if (env.videoProviderIdempotencyRequired && response.headers.get("x-gnw-idempotency-key") !== fence.idempotencyKey) throw new Error("provider_idempotency_contract_not_confirmed");
+    if (env.videoProviderFencingRequired && response.headers.get("x-gnw-fence-token") !== fence.fenceToken) throw new Error("provider_fence_contract_not_confirmed");
     const contentLength = Number(response.headers.get("content-length") ?? 0);
     if (contentLength > env.maxProviderResponseBytes) throw new Error("provider_response_too_large");
     const raw = await response.text();
@@ -2352,7 +2623,8 @@ async function submitToProvider(job, env) {
     const payload = JSON.parse(raw);
     const providerJobId = payload.id ?? payload.job_id;
     if (!providerJobId) throw new Error("provider_response_missing_job_id");
-    return { providerJobId, provider: env.videoProvider, completesImmediately: payload.status === "completed" };
+    const responseDigest = sha2563(raw);
+    return { result: { providerJobId, provider: env.videoProvider, completesImmediately: payload.status === "completed" }, providerEffectId: providerJobId, responseDigest };
   } finally {
     clearTimeout(timer);
   }
@@ -2382,17 +2654,24 @@ async function completeVideoJob(db, user, jobId, providerJobId, env = ENV) {
   const digest = sha2563(manifest);
   const storageDecision = await authorizeArtifactStorage(db, user, job.task_id, task.classification, digest, env);
   if (!storageDecision.allowed || !storageDecision.capabilityLease) throw new ExecutionDenied(storageDecision.reason || "storage_capability_denied", storageDecision.status === "STOP");
-  const stored = await executeExternal({
+  const storageKey = `tasks/${job.task_id}/video/${jobId}/${digest}.json`;
+  const fencedStorage = await executeFencedExternal({
     db,
     env,
     taskId: job.task_id,
     actorUserId: user.id,
+    tenant: user.tenantKey,
     eventType: "artifact_storage",
     actionDigest: storageDecision.actionDigest,
     capabilityLease: storageDecision.capabilityLease,
     capability: "artifact.storage",
-    effect: () => storagePut(`tasks/${job.task_id}/video/${jobId}/${digest}.json`, manifest, "application/json", env)
+    provider: env.storageDriver,
+    effectKey: `artifact:${user.tenantKey}:${storageKey}`,
+    idempotencyKey: sha2563(`GNW-ARTIFACT-IDEMPOTENCY-V1|${user.tenantKey}|${storageKey}|${digest}`),
+    effect: async () => ({ result: await storagePut(storageKey, manifest, "application/json", env), providerEffectId: storageKey, responseDigest: digest })
   });
+  if (fencedStorage.status !== "COMPLETED" || !fencedStorage.result) throw new ExecutionDenied("artifact_storage_pending_reconciliation");
+  const stored = fencedStorage.result;
   await createArtifact(db, {
     taskId: job.task_id,
     videoJobId: jobId,
@@ -2693,6 +2972,8 @@ var TaskSandbox = class {
 init_security();
 async function executeInRemoteExecutor(env, request) {
   if (!env.executorUrl || !env.executorSharedToken) throw new Error("executor_not_configured");
+  const auth = request.authorization;
+  if (auth.lease.taskId !== request.taskId || auth.lease.actionDigest !== auth.actionDigest || auth.lease.capability !== auth.capability || auth.lease.actorUserId !== auth.actorUserId || auth.lease.subject !== String(auth.actorUserId) || auth.lease.tenant !== auth.tenant) throw new Error("executor_authorization_binding");
   const endpoint = `${env.executorUrl}/v1/execute`;
   assertEgressUrl(endpoint, env.allowedEgressHosts);
   const response = await governedFetch(endpoint, {
@@ -2785,7 +3066,7 @@ async function runGovernedCommand(p) {
     capabilityLease: p.capabilityLease,
     capability: "exec.command",
     effect: async () => {
-      const result = p.env.executorRequired ? await executeInRemoteExecutor(p.env, { taskId: p.taskId, command: p.command, timeoutMs: 45e3, maxOutputBytes: p.env.maxBudgetBytes }) : await sandbox.execute(p.command, [], {
+      const result = p.env.executorRequired ? await executeInRemoteExecutor(p.env, { taskId: p.taskId, command: p.command, timeoutMs: 45e3, maxOutputBytes: p.env.maxBudgetBytes, authorization: { lease: p.capabilityLease, actionDigest: p.actionDigest, capability: "exec.command", actorUserId: p.user.id, tenant: p.capabilityLease.tenant } }) : await sandbox.execute(p.command, [], {
         checkInterlock,
         timeoutMs: 45e3,
         maxOutputBytes: p.env.maxBudgetBytes
@@ -2826,7 +3107,7 @@ async function runGovernedPython(p) {
     capabilityLease: p.capabilityLease,
     capability: "exec.python",
     effect: async () => {
-      const result = p.env.executorRequired ? await executeInRemoteExecutor(p.env, { taskId: p.taskId, command: "python", args: [scriptName], files: [{ path: scriptName, content: p.script }], timeoutMs: 6e4, maxOutputBytes: p.env.maxBudgetBytes }) : await sandbox.execute(`python "${scriptName}"`, [], {
+      const result = p.env.executorRequired ? await executeInRemoteExecutor(p.env, { taskId: p.taskId, command: "python", args: [scriptName], files: [{ path: scriptName, content: p.script }], timeoutMs: 6e4, maxOutputBytes: p.env.maxBudgetBytes, authorization: { lease: p.capabilityLease, actionDigest: p.actionDigest, capability: "exec.python", actorUserId: p.user.id, tenant: p.capabilityLease.tenant } }) : await sandbox.execute(`python "${scriptName}"`, [], {
         checkInterlock,
         timeoutMs: 6e4,
         maxOutputBytes: p.env.maxBudgetBytes
@@ -3960,6 +4241,7 @@ var TrajectoryInvariantEngine = class {
 };
 
 // src/server/skills/types.ts
+var SKILL_DIGEST_VERSION = "GNW-SKILL-DEFINITION-V1";
 var SkillExecutionError = class extends Error {
   constructor(code, message) {
     super(message ? `${code}: ${message}` : code);
@@ -3971,6 +4253,13 @@ var SkillExecutionError = class extends Error {
 
 // src/server/skills/registry.ts
 init_security();
+function skillDefinitionDigest(skill) {
+  return sha256(canonicalize({
+    version: SKILL_DIGEST_VERSION,
+    metadata: skill.metadata,
+    parameterSchema: skill.paramSchema.toString()
+  }));
+}
 var GovernedSkillRegistry = class {
   skills = /* @__PURE__ */ new Map();
   /**
@@ -4020,6 +4309,15 @@ var GovernedSkillRegistry = class {
     }
     if (ctx.capabilityLease.taskId !== ctx.taskId) {
       throw new SkillExecutionError("task_id_mismatch", "Lease taskId does not match execution context taskId.");
+    }
+    if (ctx.capabilityLease.actorUserId !== ctx.actorUserId || ctx.capabilityLease.subject !== String(ctx.actorUserId)) {
+      throw new SkillExecutionError("actor_binding", "Lease actor and subject do not match execution context.");
+    }
+    if (ctx.capabilityLease.tenant !== ctx.tenant) {
+      throw new SkillExecutionError("tenant_binding", "Lease tenant does not match execution context.");
+    }
+    if (ctx.skillDigest !== skillDefinitionDigest(skill)) {
+      throw new SkillExecutionError("skill_digest_mismatch", "Skill definition digest does not match the admitted context.");
     }
     if (ctx.capabilityLease.actionDigest !== ctx.actionDigest) {
       throw new SkillExecutionError("action_digest_mismatch", "Lease actionDigest does not match context actionDigest.");
@@ -4914,6 +5212,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       const user = await loadSessionUser(db, req, env);
       if (!user) return res.status(401).json({ error: "unauthenticated" });
       req.user = user;
+      req.db = db.withTenant(user.tenantKey);
       next();
     } catch (error) {
       next(error);
@@ -4945,9 +5244,9 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       await signIn(db, userId);
       const token = await createSession(db, userId, env.sessionSecret);
       setSessionCookie(res, token, env);
-      await appendAudit(db, { actorUserId: userId, eventType: "user_registered", decision: "ALLOW", reason: "account_created", payload: { email: parsed.data.email } });
-      const created = await findUserById(db, userId);
-      const workspaceId = await ensurePersonalWorkspace(db, userId, parsed.data.email);
+      await appendAudit(req.db, { actorUserId: userId, eventType: "user_registered", decision: "ALLOW", reason: "account_created", payload: { email: parsed.data.email } });
+      const created = await findUserById(req.db, userId);
+      const workspaceId = await ensurePersonalWorkspace(req.db, userId, parsed.data.email);
       return res.status(201).json({ user: { id: userId, email: parsed.data.email, name: created?.name ?? null, role: created?.role ?? "user", workspaceId, tenantKey: `tenant-user-${userId}` }, ...env.sessionTokenInBody ? { token } : {} });
     } catch (error) {
       const code = error instanceof Error ? error.message : "registration_failed";
@@ -4960,22 +5259,22 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
     if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
     const email = parsed.data.email.trim().toLowerCase();
     const ip = req.ip ?? "unknown";
-    if (await recentFailedLogins(db, email) >= 8) {
-      await appendAudit(db, { eventType: "login_throttled", decision: "DENY", reason: "too_many_attempts", payload: { email } });
+    if (await recentFailedLogins(req.db, email) >= 8) {
+      await appendAudit(req.db, { eventType: "login_throttled", decision: "DENY", reason: "too_many_attempts", payload: { email } });
       return res.status(429).json({ error: "too_many_attempts" });
     }
-    const user = await findUserByEmail(db, email);
+    const user = await findUserByEmail(req.db, email);
     const ok = user ? await verifyPassword(parsed.data.password, user.password_hash) : false;
-    await recordLoginAttempt(db, email, ip, ok);
+    await recordLoginAttempt(req.db, email, ip, ok);
     if (!user || !ok) {
-      await appendAudit(db, { eventType: "login_failed", decision: "DENY", reason: "invalid_credentials", payload: { email } });
+      await appendAudit(req.db, { eventType: "login_failed", decision: "DENY", reason: "invalid_credentials", payload: { email } });
       return res.status(401).json({ error: "invalid_credentials" });
     }
     await signIn(db, user.id);
-    await ensurePersonalWorkspace(db, user.id, user.email);
+    await ensurePersonalWorkspace(req.db, user.id, user.email);
     const token = await createSession(db, user.id, env.sessionSecret);
     setSessionCookie(res, token, env);
-    await appendAudit(db, { actorUserId: user.id, eventType: "login_succeeded", decision: "ALLOW", reason: "session_issued", payload: { email } });
+    await appendAudit(req.db, { actorUserId: user.id, eventType: "login_succeeded", decision: "ALLOW", reason: "session_issued", payload: { email } });
     return res.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role }, ...env.sessionTokenInBody ? { token } : {} });
   }));
   app.post("/api/auth/guest", (_req, res) => res.status(410).json({ error: "guest_access_disabled" }));
@@ -4987,17 +5286,17 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
   }));
   app.get("/api/auth/me", asyncRoute(async (req, res) => {
     const user = await loadSessionUser(db, req, env);
-    const bootstrap = await countUsers(db) === 0;
+    const bootstrap = await countUsers(req.db) === 0;
     res.json({ user, bootstrap, allowSelfRegistration: env.allowSelfRegistration });
   }));
   app.get("/api/workspace/summary", auth(), asyncRoute(async (req, res) => {
     const user = req.user;
-    await expireApprovals(db);
+    await expireApprovals(req.db);
     const [tasks, approvals, interlock, notifications] = await Promise.all([
-      listTasks(db, user.workspaceId),
-      listApprovals(db, user.workspaceId),
-      getInterlock(db),
-      listNotifications(db, user.id, 20)
+      listTasks(req.db, user.workspaceId),
+      listApprovals(req.db, user.workspaceId),
+      getInterlock(req.db),
+      listNotifications(req.db, user.id, 20)
     ]);
     res.json({
       user,
@@ -5018,14 +5317,14 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
     budgetBytes: z3.number().int().min(512).max(env.maxBudgetBytes).default(4096)
   });
   app.get("/api/tasks", auth(), asyncRoute(async (req, res) => {
-    res.json({ tasks: await listTasks(db, req.user.workspaceId) });
+    res.json({ tasks: await listTasks(req.db, req.user.workspaceId) });
   }));
   app.post("/api/tasks", auth(), asyncRoute(async (req, res) => {
     const parsed = taskInput.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "invalid_input", detail: parsed.error.flatten() });
-    const interlock = await getInterlock(db);
+    const interlock = await getInterlock(req.db);
     if (interlock.killSwitch || interlock.circuitOpen) {
-      await appendAudit(db, { actorUserId: req.user.id, eventType: "task_admission", decision: "STOP", reason: "safety_interlock", payload: { purpose: parsed.data.purpose } });
+      await appendAudit(req.db, { actorUserId: req.user.id, eventType: "task_admission", decision: "STOP", reason: "safety_interlock", payload: { purpose: parsed.data.purpose } });
       return res.status(423).json({ error: "safety_interlock", detail: "The kill switch or circuit breaker is engaged. No task can be admitted." });
     }
     const result = await runTask(db, req.user, parsed.data, env);
@@ -5034,41 +5333,41 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
   app.get("/api/tasks/:taskId", auth(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId) || taskId <= 0) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await getTaskForUser(db, taskId, req.user.workspaceId);
+    const task = await getTaskForUser(req.db, taskId, req.user.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
     const [messages, runs, approvals, videoJobs, artifacts, audit] = await Promise.all([
-      listMessages(db, taskId),
-      listAgentRuns(db, taskId),
-      listApprovals(db, req.user.workspaceId),
-      listVideoJobs(db, taskId),
-      listArtifacts(db, taskId),
-      listAudit(db, taskId)
+      listMessages(req.db, taskId),
+      listAgentRuns(req.db, taskId),
+      listApprovals(req.db, req.user.workspaceId),
+      listVideoJobs(req.db, taskId),
+      listArtifacts(req.db, taskId),
+      listAudit(req.db, taskId)
     ]);
     return res.json({ task, messages, runs, approvals: approvals.filter((item) => item.task_id === taskId), videoJobs, artifacts, audit });
   }));
   app.get("/api/approvals", auth(), asyncRoute(async (req, res) => {
-    await expireApprovals(db);
-    res.json({ approvals: await listApprovals(db, req.user.workspaceId) });
+    await expireApprovals(req.db);
+    res.json({ approvals: await listApprovals(req.db, req.user.workspaceId) });
   }));
   app.post("/api/approvals/:approvalId/review", auth(), asyncRoute(async (req, res) => {
     const approvalId = Number(req.params.approvalId);
     const parsed = z3.object({ status: z3.enum(["approved", "denied"]) }).safeParse(req.body);
     if (!Number.isInteger(approvalId) || !parsed.success) return res.status(400).json({ error: "invalid_input" });
-    await expireApprovals(db);
-    const approval = await getApproval(db, approvalId);
+    await expireApprovals(req.db);
+    const approval = await getApproval(req.db, approvalId);
     if (!approval) return res.status(404).json({ error: "approval_not_found" });
-    const task = await getTaskForUser(db, approval.task_id, req.user.workspaceId);
+    const task = await getTaskForUser(req.db, approval.task_id, req.user.workspaceId);
     if (!task) return res.status(403).json({ error: "tenant_binding" });
     if (approval.requested_by === req.user.id && req.user.role !== "admin") {
-      await appendAudit(db, { taskId: approval.task_id, actorUserId: req.user.id, eventType: "approval_review", decision: "DENY", reason: "separation_of_duties", payload: { approvalId } });
+      await appendAudit(req.db, { taskId: approval.task_id, actorUserId: req.user.id, eventType: "approval_review", decision: "DENY", reason: "separation_of_duties", payload: { approvalId } });
       return res.status(403).json({ error: "separation_of_duties" });
     }
-    const updated = await reviewApproval(db, approvalId, req.user.id, parsed.data.status);
+    const updated = await reviewApproval(req.db, approvalId, req.user.id, parsed.data.status);
     if (!updated) return res.status(409).json({ error: "approval_not_pending_or_expired" });
-    await appendAudit(db, { taskId: approval.task_id, actorUserId: req.user.id, eventType: "approval_review", decision: parsed.data.status === "approved" ? "ALLOW" : "DENY", reason: `approval_${parsed.data.status}`, payload: { approvalId, actionDigest: approval.action_digest } });
+    await appendAudit(req.db, { taskId: approval.task_id, actorUserId: req.user.id, eventType: "approval_review", decision: parsed.data.status === "approved" ? "ALLOW" : "DENY", reason: `approval_${parsed.data.status}`, payload: { approvalId, actionDigest: approval.action_digest } });
     if (parsed.data.status === "denied" && approval.video_job_id) {
-      await updateVideoJob(db, approval.video_job_id, { status: "stopped", errorMessage: "approval_denied" });
-      await updateTaskStatus(db, approval.task_id, "denied");
+      await updateVideoJob(req.db, approval.video_job_id, { status: "stopped", errorMessage: "approval_denied" });
+      await updateTaskStatus(req.db, approval.task_id, "denied");
     }
     return res.json({ success: true, status: parsed.data.status });
   }));
@@ -5082,12 +5381,12 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
   app.get("/api/video/:jobId", auth(), asyncRoute(async (req, res) => {
     const jobId = Number(req.params.jobId);
     if (!Number.isInteger(jobId)) return res.status(400).json({ error: "invalid_job_id" });
-    const job = await getVideoJob(db, jobId);
+    const job = await getVideoJob(req.db, jobId);
     if (!job) return res.status(404).json({ error: "video_job_not_found" });
-    const task = await getTaskForUser(db, job.task_id, req.user.workspaceId);
+    const task = await getTaskForUser(req.db, job.task_id, req.user.workspaceId);
     if (!task) return res.status(403).json({ error: "tenant_binding" });
     const refreshed = await pollVideoJob(db, req.user, jobId, env);
-    return res.json({ job: refreshed ?? job, artifacts: await listArtifacts(db, job.task_id) });
+    return res.json({ job: refreshed ?? job, artifacts: await listArtifacts(req.db, job.task_id) });
   }));
   app.post("/api/artifacts", auth(), asyncRoute(async (req, res) => {
     const parsed = z3.object({
@@ -5097,25 +5396,32 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       contentType: z3.string().min(3).max(160)
     }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
-    const task = await getTaskForUser(db, parsed.data.taskId, req.user.workspaceId);
+    const task = await getTaskForUser(req.db, parsed.data.taskId, req.user.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
     const digest = sha2563(parsed.data.content);
-    const storageDecision = await authorizeArtifactStorage(db, req.user, task.id, task.classification, digest, env);
+    const storageDecision = await authorizeArtifactStorage(req.db, req.user, task.id, task.classification, digest, env);
     if (!storageDecision.allowed || !storageDecision.capabilityLease) {
       return res.status(storageDecision.status === "STOP" ? 503 : 403).json({ error: storageDecision.reason });
     }
-    const stored = await executeExternal({
-      db,
+    const storageKey = `tasks/${task.id}/${parsed.data.kind}/${digest}.artifact`;
+    const fenced = await executeFencedExternal({
+      db: req.db,
       env,
       taskId: task.id,
       actorUserId: req.user.id,
+      tenant: req.user.tenantKey,
       eventType: "artifact_storage",
       actionDigest: storageDecision.actionDigest,
       capabilityLease: storageDecision.capabilityLease,
       capability: "artifact.storage",
-      effect: () => storagePut(`tasks/${task.id}/${parsed.data.kind}/${digest}.artifact`, parsed.data.content, parsed.data.contentType, env)
+      provider: env.storageDriver,
+      effectKey: `artifact:${req.user.tenantKey}:${storageKey}`,
+      idempotencyKey: sha2563(`GNW-ARTIFACT-IDEMPOTENCY-V1|${req.user.tenantKey}|${storageKey}|${digest}`),
+      effect: async () => ({ result: await storagePut(storageKey, parsed.data.content, parsed.data.contentType, env), providerEffectId: storageKey, responseDigest: digest })
     });
-    await createArtifact(db, {
+    if (fenced.status !== "COMPLETED" || !fenced.result) return res.status(409).json({ error: "artifact_storage_pending_reconciliation" });
+    const stored = fenced.result;
+    await createArtifact(req.db, {
       taskId: task.id,
       kind: parsed.data.kind,
       storageKey: stored.key,
@@ -5125,13 +5431,13 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       sha256: digest,
       createdBy: req.user.id
     });
-    await appendAudit(db, { taskId: task.id, actorUserId: req.user.id, eventType: "artifact_registered", decision: "ALLOW", reason: "external_storage_reference_created", payload: { kind: parsed.data.kind, storageKey: stored.key, sha256: digest } });
+    await appendAudit(req.db, { taskId: task.id, actorUserId: req.user.id, eventType: "artifact_registered", decision: "ALLOW", reason: "external_storage_reference_created", payload: { kind: parsed.data.kind, storageKey: stored.key, sha256: digest } });
     return res.status(201).json({ key: stored.key, url: stored.url, sha256: digest, byteSize: stored.byteSize, driver: stored.driver });
   }));
   app.post("/api/tasks/:taskId/execute", auth(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId)) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await getTaskForUser(db, taskId, req.user.workspaceId);
+    const task = await getTaskForUser(req.db, taskId, req.user.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
     const parsed = z3.object({
       operation: z3.enum(["exec.command", "exec.python", "file.read", "file.write", "file.list"]),
@@ -5170,13 +5476,13 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       grant.issuer = signed.issuer;
       grant.signature = signed.signature;
     }
-    const decision = await governanceService(db, env).authorize(grant);
+    const decision = await governanceService(req.db, env).authorize(grant);
     if (!decision.allowed || !decision.capabilityLease) {
       return res.status(decision.status === "STOP" ? 423 : 403).json({ error: decision.reason });
     }
     if (parsed.data.operation === "exec.command") {
       const result = await runGovernedCommand({
-        db,
+        db: req.db,
         env,
         user: req.user,
         taskId: task.id,
@@ -5188,7 +5494,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
     }
     if (parsed.data.operation === "exec.python") {
       const result = await runGovernedPython({
-        db,
+        db: req.db,
         env,
         user: req.user,
         taskId: task.id,
@@ -5200,7 +5506,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
     }
     if (parsed.data.operation === "file.read") {
       const result = await runGovernedFileRead({
-        db,
+        db: req.db,
         env,
         user: req.user,
         taskId: task.id,
@@ -5212,7 +5518,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
     }
     if (parsed.data.operation === "file.write") {
       const result = await runGovernedFileWrite({
-        db,
+        db: req.db,
         env,
         user: req.user,
         taskId: task.id,
@@ -5225,7 +5531,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
     }
     if (parsed.data.operation === "file.list") {
       const result = await runGovernedFileList({
-        db,
+        db: req.db,
         env,
         user: req.user,
         taskId: task.id,
@@ -5240,7 +5546,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
   app.post("/api/tasks/:taskId/browse", auth(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId)) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await getTaskForUser(db, taskId, req.user.workspaceId);
+    const task = await getTaskForUser(req.db, taskId, req.user.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
     const parsed = z3.object({
       url: z3.string().url(),
@@ -5269,12 +5575,12 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       grant.issuer = signed.issuer;
       grant.signature = signed.signature;
     }
-    const decision = await governanceService(db, env).authorize(grant);
+    const decision = await governanceService(req.db, env).authorize(grant);
     if (!decision.allowed || !decision.capabilityLease) {
       return res.status(decision.status === "STOP" ? 423 : 403).json({ error: decision.reason });
     }
     const result = await runGovernedBrowse({
-      db,
+      db: req.db,
       env,
       user: req.user,
       taskId: task.id,
@@ -5287,7 +5593,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
   app.post("/api/tasks/:taskId/visual-browse", auth(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId)) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await getTaskForUser(db, taskId, req.user.workspaceId);
+    const task = await getTaskForUser(req.db, taskId, req.user.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
     const parsed = z3.object({
       url: z3.string().url(),
@@ -5320,13 +5626,13 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       grant.issuer = signed.issuer;
       grant.signature = signed.signature;
     }
-    const decision = await governanceService(db, env).authorize(grant);
+    const decision = await governanceService(req.db, env).authorize(grant);
     if (!decision.allowed || !decision.capabilityLease) {
       return res.status(decision.status === "STOP" ? 423 : 403).json({ error: decision.reason });
     }
     if (parsed.data.action === "inspect") {
       const result = await runGovernedVisualInspect({
-        db,
+        db: req.db,
         env,
         user: req.user,
         taskId: task.id,
@@ -5338,7 +5644,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       return res.json(result);
     } else {
       const result = await runGovernedBrowserAction({
-        db,
+        db: req.db,
         env,
         user: req.user,
         taskId: task.id,
@@ -5355,7 +5661,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
   app.post("/api/tasks/:taskId/git", auth(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId)) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await getTaskForUser(db, taskId, req.user.workspaceId);
+    const task = await getTaskForUser(req.db, taskId, req.user.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
     const parsed = z3.object({
       operation: z3.enum(["status", "diff", "commit", "pr"]),
@@ -5388,7 +5694,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       grant.issuer = signed.issuer;
       grant.signature = signed.signature;
     }
-    const decision = await governanceService(db, env).authorize(grant);
+    const decision = await governanceService(req.db, env).authorize(grant);
     if (!decision.allowed || !decision.capabilityLease) {
       return res.status(decision.status === "STOP" ? 423 : 403).json({ error: decision.reason });
     }
@@ -5405,7 +5711,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
   app.post("/api/tasks/:taskId/memory", auth(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId)) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await getTaskForUser(db, taskId, req.user.workspaceId);
+    const task = await getTaskForUser(req.db, taskId, req.user.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
     const parsed = z3.object({
       operation: z3.enum(["store", "query"]),
@@ -5437,7 +5743,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       grant.issuer = signed.issuer;
       grant.signature = signed.signature;
     }
-    const decision = await governanceService(db, env).authorize(grant);
+    const decision = await governanceService(req.db, env).authorize(grant);
     if (!decision.allowed || !decision.capabilityLease) {
       return res.status(decision.status === "STOP" ? 423 : 403).json({ error: decision.reason });
     }
@@ -5450,7 +5756,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
   app.post("/api/tasks/:taskId/code", auth(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId)) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await getTaskForUser(db, taskId, req.user.workspaceId);
+    const task = await getTaskForUser(req.db, taskId, req.user.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
     const parsed = z3.object({
       operation: z3.enum(["symbols", "definition"]),
@@ -5481,7 +5787,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       grant.issuer = signed.issuer;
       grant.signature = signed.signature;
     }
-    const decision = await governanceService(db, env).authorize(grant);
+    const decision = await governanceService(req.db, env).authorize(grant);
     if (!decision.allowed || !decision.capabilityLease) {
       return res.status(decision.status === "STOP" ? 423 : 403).json({ error: decision.reason });
     }
@@ -5494,17 +5800,17 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
   app.get("/api/audit", auth(), adminOnly(), asyncRoute(async (req, res) => {
     const taskId = req.query.taskId ? Number(req.query.taskId) : void 0;
     if (taskId) {
-      const task = await getTaskForUser(db, taskId, req.user.workspaceId);
+      const task = await getTaskForUser(req.db, taskId, req.user.workspaceId);
       if (!task) return res.status(404).json({ error: "task_not_found" });
     }
-    return res.json({ events: await listAudit(db, taskId, 300) });
+    return res.json({ events: await listAudit(req.db, taskId, 300) });
   }));
   app.get("/api/audit/bundle/:taskId", auth(), adminOnly(), asyncRoute(async (req, res) => {
     const taskId = Number(req.params.taskId);
     if (!Number.isInteger(taskId)) return res.status(400).json({ error: "invalid_task_id" });
-    const task = await getTaskForUser(db, taskId, req.user.workspaceId);
+    const task = await getTaskForUser(req.db, taskId, req.user.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
-    const bundle = await exportAuditProofBundle(db, taskId);
+    const bundle = await exportAuditProofBundle(req.db, taskId);
     return res.json(bundle);
   }));
   app.post("/api/audit/verify-proof", auth(), asyncRoute(async (req, res) => {
@@ -5519,17 +5825,17 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
     const valid = verifyMerkleProof(parsed.data);
     return res.json({ valid, targetHash: parsed.data.targetHash, rootHash: parsed.data.rootHash });
   }));
-  app.get("/api/audit/verify", auth(), adminOnly(), asyncRoute(async (_req, res) => {
-    res.json(await verifyAuditChain(db));
+  app.get("/api/audit/verify", auth(), adminOnly(), asyncRoute(async (req, res) => {
+    res.json(await verifyAuditChain(req.db));
   }));
-  app.get("/api/controls/interlock", auth(), asyncRoute(async (_req, res) => {
-    res.json(await getInterlock(db));
+  app.get("/api/controls/interlock", auth(), asyncRoute(async (req, res) => {
+    res.json(await getInterlock(req.db));
   }));
   app.post("/api/controls/interlock", auth(), adminOnly(), asyncRoute(async (req, res) => {
     const parsed = z3.object({ killSwitch: z3.boolean().optional(), circuitOpen: z3.boolean().optional() }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
-    const interlock = await setInterlock(db, parsed.data, req.user.id);
-    await appendAudit(db, { actorUserId: req.user.id, eventType: "safety_control_changed", decision: interlock.killSwitch || interlock.circuitOpen ? "STOP" : "ALLOW", reason: "interlock_updated", payload: interlock });
+    const interlock = await setInterlock(req.db, parsed.data, req.user.id);
+    await appendAudit(req.db, { actorUserId: req.user.id, eventType: "safety_control_changed", decision: interlock.killSwitch || interlock.circuitOpen ? "STOP" : "ALLOW", reason: "interlock_updated", payload: interlock });
     return res.json(interlock);
   }));
   const quorumEngine = new MultiAgentQuorumEngine(0.66);
@@ -5544,7 +5850,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       isDestructive: z3.boolean().optional()
     }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
-    const task = await getTaskForUser(db, parsed.data.taskId, req.user.workspaceId);
+    const task = await getTaskForUser(req.db, parsed.data.taskId, req.user.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
     const proposal = quorumEngine.createProposal({
       taskId: task.id,
@@ -5566,7 +5872,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
     quorumEngine.auditSecurity(proposal.proposalId);
     quorumEngine.adjudicateChiefJustice(proposal.proposalId);
     const result = quorumEngine.adjudicate(proposal.proposalId);
-    await appendAudit(db, {
+    await appendAudit(req.db, {
       taskId: task.id,
       actorUserId: req.user.id,
       eventType: "quorum_consensus",
@@ -5589,7 +5895,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       parameters: z3.record(z3.unknown())
     }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
-    const task = await getTaskForUser(db, parsed.data.taskId, req.user.workspaceId);
+    const task = await getTaskForUser(req.db, parsed.data.taskId, req.user.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
     const check = invariantEngine.checkInvariants({
       taskId: task.id,
@@ -5623,7 +5929,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       cognitiveStage: z3.enum(["observe", "understand", "reason", "plan", "act", "verify", "critique", "learn"]).default("act")
     }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "invalid_input", detail: parsed.error.message });
-    const task = await getTaskForUser(db, parsed.data.taskId, req.user.workspaceId);
+    const task = await getTaskForUser(req.db, parsed.data.taskId, req.user.workspaceId);
     if (!task) return res.status(404).json({ error: "task_not_found" });
     const capability = skill.metadata.requiredCapability;
     const grant = buildGrant({
@@ -5640,13 +5946,14 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       env
     });
     grant.inputDigest = sha2563(canonicalize(parsed.data.parameters));
-    grant.normalizedParameters = { taskId: task.id, skillId: skill.metadata.id, ...parsed.data.parameters };
+    const skillDigest = skillDefinitionDigest(skill);
+    grant.normalizedParameters = { taskId: task.id, skillId: skill.metadata.id, skillDigest, ...parsed.data.parameters };
     if (env.requireSignedGrants) {
       const signed = signGrant(grant, env.grantIssuer, env.grantPrivateKeyPem);
       grant.issuer = signed.issuer;
       grant.signature = signed.signature;
     }
-    const decision = await governanceService(db, env).authorize(grant);
+    const decision = await governanceService(req.db, env).authorize(grant);
     if (!decision.allowed || !decision.capabilityLease) {
       return res.status(decision.status === "STOP" ? 423 : 403).json({ error: decision.reason });
     }
@@ -5655,6 +5962,8 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       {
         taskId: task.id,
         actorUserId: req.user.id,
+        tenant: req.user.tenantKey,
+        skillDigest,
         actionDigest: decision.actionDigest,
         capabilityLease: decision.capabilityLease,
         parameters: parsed.data.parameters,
@@ -5662,7 +5971,7 @@ async function createApp(env = ENV, dbPromise = getDb(env)) {
       },
       env.grantPublicKeyPem
     );
-    await appendAudit(db, {
+    await appendAudit(req.db, {
       taskId: task.id,
       actorUserId: req.user.id,
       eventType: "skill_executed",
