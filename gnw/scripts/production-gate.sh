@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ -n "$(git -C .. status --porcelain)" ]]; then
+  echo "production gate requires a clean, committed source tree" >&2
+  exit 2
+fi
+candidate="$(git -C .. rev-parse HEAD)"
+
 echo "[0/10] static release policy checks"
 if grep -R -E "npm ci[[:space:]]*\|\|[[:space:]]*npm install|npm install --omit=dev" --exclude=production-gate.sh -n Dockerfile scripts; then
   echo "unsafe dependency fallback detected" >&2
@@ -32,17 +38,24 @@ NODE_ENV=production npm run --silent typecheck >/dev/null
 echo "[7/10] container/staging gate"
 command -v docker >/dev/null || { echo "docker is required for the staging gate" >&2; exit 2; }
 command -v trivy >/dev/null || { echo "Trivy is required; container scan cannot be skipped" >&2; exit 2; }
-case "$(node --version)" in v22.*) ;; *) echo "Node.js 22 is required for release gates" >&2; exit 2 ;; esac
-candidate="$(git rev-parse --short=12 HEAD)"
+test "$(node --version)" = "v22.23.4" || { echo "Node.js v22.23.4 is required for release gates" >&2; exit 2; }
+build_network="${GNW_DOCKER_BUILD_NETWORK:-default}"
+case "$build_network" in
+  default) build_network_flag=() ;;
+  host) build_network_flag=(--network host) ;;
+  *) echo "GNW_DOCKER_BUILD_NETWORK must be default or host" >&2; exit 2 ;;
+esac
 app_image="gnw-governed-agent:${candidate}"
 executor_image="gnw-governed-executor:${candidate}"
-docker build --pull --no-cache -t "$app_image" -f Dockerfile .
-docker build --pull --no-cache -t "$executor_image" -f Dockerfile.executor .
+docker build "${build_network_flag[@]}" --pull --no-cache --label "org.opencontainers.image.revision=${candidate}" -t "$app_image" -f Dockerfile .
+docker build "${build_network_flag[@]}" --pull --no-cache --label "org.opencontainers.image.revision=${candidate}" -t "$executor_image" -f Dockerfile.executor .
+trivy image --download-db-only --no-progress
 for image in "$app_image" "$executor_image"; do
-  report="/tmp/$(printf '%s' "$image" | tr '/:' '--')-trivy.json"
+  report="/tmp/${candidate}-$(printf '%s' "$image" | tr '/:' '--')-trivy.json"
   echo "Scanning immutable candidate image $image; full report: $report"
-  trivy image --scanners vuln --format json --output "$report" "$image"
-  trivy image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --no-progress "$image"
+  docker image inspect "$image" --format 'id={{.Id}} os={{.Os}} arch={{.Architecture}} user={{.Config.User}}'
+  trivy image --scanners vuln,secret --format json --output "$report" --no-progress "$image"
+  trivy image --scanners vuln,secret --severity HIGH,CRITICAL --exit-code 1 --no-progress "$image"
 done
 
 echo "[8/10] 100-case evidence ledger gate"
