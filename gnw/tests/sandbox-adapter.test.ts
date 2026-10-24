@@ -25,6 +25,29 @@ describe("Step 6 sandbox adapter boundary", () => {
     await expect(adapter.execute({ taskId: 1, command: "true" })).rejects.toThrow("remote_executor_not_required");
   });
 
+  it("does not expose executor credentials to task commands, including custom environment overrides", () => {
+    const previousExecutorToken = process.env.EXECUTOR_SHARED_TOKEN;
+    const previousGatewayToken = process.env.GNW_EXECUTOR_SHARED_TOKEN;
+    process.env.EXECUTOR_SHARED_TOKEN = "host-executor-secret";
+    process.env.GNW_EXECUTOR_SHARED_TOKEN = "host-gateway-secret";
+    try {
+      const sandbox = new TaskSandbox(1, "/tmp/gnw-sandboxes");
+      const clean = sandbox.cleanEnvironment({
+        EXECUTOR_SHARED_TOKEN: "custom-executor-secret",
+        GNW_EXECUTOR_SHARED_TOKEN: "custom-gateway-secret",
+      });
+      expect(clean.EXECUTOR_SHARED_TOKEN).toBeUndefined();
+      expect(clean.GNW_EXECUTOR_SHARED_TOKEN).toBeUndefined();
+      expect(clean.GNW_TASK_ID).toBe("1");
+      expect(clean.GNW_SANDBOX).toBe("true");
+    } finally {
+      if (previousExecutorToken === undefined) delete process.env.EXECUTOR_SHARED_TOKEN;
+      else process.env.EXECUTOR_SHARED_TOKEN = previousExecutorToken;
+      if (previousGatewayToken === undefined) delete process.env.GNW_EXECUTOR_SHARED_TOKEN;
+      else process.env.GNW_EXECUTOR_SHARED_TOKEN = previousGatewayToken;
+    }
+  });
+
   it("rejects sibling-prefix paths outside the sandbox jail", () => {
     const sandbox = new TaskSandbox(1, "/tmp/gnw-sandboxes");
     expect(() => sandbox.resolvePath("../task-10/secret.txt")).toThrow(/Access outside sandbox jail refused/);
