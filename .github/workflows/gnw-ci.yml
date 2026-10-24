@@ -1,0 +1,46 @@
+name: GNW CI
+
+on:
+  pull_request:
+    paths:
+      - "gnw/**"
+      - ".github/workflows/gnw-ci.yml"
+  push:
+    branches:
+      - "audit/source-import-2026-09-14"
+      - "fix/**"
+    paths:
+      - "gnw/**"
+      - ".github/workflows/gnw-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gnw-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, tests, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gnw
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: gnw/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit and integration tests
+        run: npm test
+      - name: Production build
+        run: npm run build
