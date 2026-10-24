@@ -39,6 +39,9 @@ const BLOCKED_ENV_VARS = [
   "S3_SECRET_ACCESS_KEY",
   "S3_ACCESS_KEY_ID",
   "NOTIFY_WEBHOOK_URL",
+  // Executor credentials must never be inherited by task-controlled commands.
+  "EXECUTOR_SHARED_TOKEN",
+  "GNW_EXECUTOR_SHARED_TOKEN",
 ];
 
 export class TaskSandbox {
@@ -70,13 +73,19 @@ export class TaskSandbox {
    * Sanitizes process environment by scrubbing host secrets.
    */
   cleanEnvironment(customEnv: Record<string, string> = {}): NodeJS.ProcessEnv {
+    const blocked = new Set(BLOCKED_ENV_VARS);
     const clean: NodeJS.ProcessEnv = {};
     for (const [key, value] of Object.entries(process.env)) {
-      if (!BLOCKED_ENV_VARS.includes(key)) {
+      if (!blocked.has(key)) {
         clean[key] = value;
       }
     }
-    return { ...clean, ...customEnv, GNW_TASK_ID: String(this.taskId), GNW_SANDBOX: "true" };
+    // Apply the same secret filter to caller-supplied variables: otherwise a
+    // caller could accidentally re-introduce a blocked host credential.
+    for (const [key, value] of Object.entries(customEnv)) {
+      if (!blocked.has(key)) clean[key] = value;
+    }
+    return { ...clean, GNW_TASK_ID: String(this.taskId), GNW_SANDBOX: "true" };
   }
 
   /**
