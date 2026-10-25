@@ -1,0 +1,9 @@
+graph TD
+    LLM[LLM Core (Gemini)] -->|queries| RAG[Retrieval (Chroma)]
+    LLM -->|commands| Planner[Planner & Tool Dispatcher]
+    Planner -->|executes| PS[PowerShell Tool]
+    Planner -->|executes| File[File Tool]
+    Planner -->|executes| Web[Web Tool]
+    Planner -->|stores| Mem[SQLite Memory]
+    Planner -->|traces| OT[OpenTelemetry]
+    OT -->|logs| Logs[Logs & Traces]
