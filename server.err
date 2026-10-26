@@ -1,0 +1,10 @@
++--------------- Perplexity API Server ---------------+
+| \U0001f310  URL:   http://127.0.0.1:8000                    |
+| \U0001f4d6  Docs:  http://127.0.0.1:8000/docs               |
+| \U0001f4d8  ReDoc: http://127.0.0.1:8000/redoc              |
+| \U0001f511  Auth:  Authorization: Bearer <Perplexity token> |
++-----------------------------------------------------+
+INFO:     Started server process [21312]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)

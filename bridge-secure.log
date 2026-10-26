@@ -1,0 +1,585 @@
+==== GNW SECURE BRIDGE START 22/10/2026  1:17:18.61 ====
+ERROR:    [Errno 10048] error while attempting to bind on address ('127.0.0.1', 8000): [winerror 10048] only one usage of each socket address (protocol/network address/port) is normally permitted
+==== GNW SECURE BRIDGE START 23/10/2026 18:13:05.73 ====
+==== GNW SECURE BRIDGE START 24/10/2026  6:14:43.88 ====
+==== GNW SECURE BRIDGE START 24/10/2026 11:11:55.00 ====
+==== GNW SECURE BRIDGE START 24/10/2026 22:34:56.40 ====
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\applications.py", line 1194, in __call__
+    await super().__call__(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\telemetry\_asgi.py", line 151, in __call__
+    await self.app(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\bridge_daemon.py", line 45, in __call__
+    await self.app(scoped, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\app.py", line 90, in __call__
+    await self.app(scope, receive_body, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\routing.py", line 678, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 2811, in app
+    await route.handle(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 1839, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 2894, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 1865, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 1328, in handle
+    await effective_context.app(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 166, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 152, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 745, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 372, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 116, in chat_completions
+    return await _execute_chat_completion(request, token)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 215, in _execute_chat_completion
+    return await _execute_prepared_request(request, token, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 227, in _execute_prepared_request
+    return await _complete_chat_request(conversation, cached_entry, request, token, query, files)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 239, in _complete_chat_request
+    await _run_non_streaming_ask(conversation, cached_entry, query, files)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 343, in _run_non_streaming_ask
+    await _run_sync_safely(partial(conversation.ask, query, files=files or None))
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 88, in _run_sync_safely
+    return await shield(task)
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Python314\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 146, in ask
+    self._execute(query, resolved_model, files, stream=stream)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 199, in _execute
+    self._complete(payload, model)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 280, in _complete
+    self._consume(payload)
+    ~~~~~~~~~~~~~^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 293, in _consume
+    self._apply_sse_data(data)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 247, in _apply_sse_data
+    answer, chunks, updated_results, raw_data = process_sse_data(
+                                                ~~~~~~~~~~~~~~~~^
+        data,
+        ^^^^^
+    ...<2 lines>...
+        self._schematized_state,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\parser.py", line 356, in process_sse_data
+    raise ResponseParsingError(
+    ...<2 lines>...
+    )
+perplexity_webui_scraper._internal.exceptions.ResponseParsingError: Failed to parse API response: Query processing failed: Error in processing query.
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\applications.py", line 1194, in __call__
+    await super().__call__(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\telemetry\_asgi.py", line 151, in __call__
+    await self.app(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\bridge_daemon.py", line 45, in __call__
+    await self.app(scoped, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\app.py", line 90, in __call__
+    await self.app(scope, receive_body, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\routing.py", line 678, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 2811, in app
+    await route.handle(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 1839, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 2894, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 1865, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 1328, in handle
+    await effective_context.app(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 166, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 152, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 745, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 372, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 116, in chat_completions
+    return await _execute_chat_completion(request, token)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 215, in _execute_chat_completion
+    return await _execute_prepared_request(request, token, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 227, in _execute_prepared_request
+    return await _complete_chat_request(conversation, cached_entry, request, token, query, files)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 239, in _complete_chat_request
+    await _run_non_streaming_ask(conversation, cached_entry, query, files)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 343, in _run_non_streaming_ask
+    await _run_sync_safely(partial(conversation.ask, query, files=files or None))
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 88, in _run_sync_safely
+    return await shield(task)
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Python314\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 146, in ask
+    self._execute(query, resolved_model, files, stream=stream)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 199, in _execute
+    self._complete(payload, model)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 280, in _complete
+    self._consume(payload)
+    ~~~~~~~~~~~~~^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 293, in _consume
+    self._apply_sse_data(data)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 247, in _apply_sse_data
+    answer, chunks, updated_results, raw_data = process_sse_data(
+                                                ~~~~~~~~~~~~~~~~^
+        data,
+        ^^^^^
+    ...<2 lines>...
+        self._schematized_state,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\parser.py", line 356, in process_sse_data
+    raise ResponseParsingError(
+    ...<2 lines>...
+    )
+perplexity_webui_scraper._internal.exceptions.ResponseParsingError: Failed to parse API response: Query processing failed: Error in processing query.
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\applications.py", line 1194, in __call__
+    await super().__call__(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\telemetry\_asgi.py", line 151, in __call__
+    await self.app(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\bridge_daemon.py", line 45, in __call__
+    await self.app(scoped, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\app.py", line 90, in __call__
+    await self.app(scope, receive_body, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\routing.py", line 678, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 2811, in app
+    await route.handle(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 1839, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 2894, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 1865, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 1328, in handle
+    await effective_context.app(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 166, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 152, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 745, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 372, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 116, in chat_completions
+    return await _execute_chat_completion(request, token)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 215, in _execute_chat_completion
+    return await _execute_prepared_request(request, token, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 227, in _execute_prepared_request
+    return await _complete_chat_request(conversation, cached_entry, request, token, query, files)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 239, in _complete_chat_request
+    await _run_non_streaming_ask(conversation, cached_entry, query, files)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 343, in _run_non_streaming_ask
+    await _run_sync_safely(partial(conversation.ask, query, files=files or None))
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 88, in _run_sync_safely
+    return await shield(task)
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Python314\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 146, in ask
+    self._execute(query, resolved_model, files, stream=stream)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 199, in _execute
+    self._complete(payload, model)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 280, in _complete
+    self._consume(payload)
+    ~~~~~~~~~~~~~^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 293, in _consume
+    self._apply_sse_data(data)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 247, in _apply_sse_data
+    answer, chunks, updated_results, raw_data = process_sse_data(
+                                                ~~~~~~~~~~~~~~~~^
+        data,
+        ^^^^^
+    ...<2 lines>...
+        self._schematized_state,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\parser.py", line 356, in process_sse_data
+    raise ResponseParsingError(
+    ...<2 lines>...
+    )
+perplexity_webui_scraper._internal.exceptions.ResponseParsingError: Failed to parse API response: Query processing failed: Error in processing query.
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\applications.py", line 1194, in __call__
+    await super().__call__(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\telemetry\_asgi.py", line 151, in __call__
+    await self.app(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\bridge_daemon.py", line 45, in __call__
+    await self.app(scoped, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\app.py", line 90, in __call__
+    await self.app(scope, receive_body, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\routing.py", line 678, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 2811, in app
+    await route.handle(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 1839, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 2894, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 1865, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 1328, in handle
+    await effective_context.app(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 166, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 152, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 745, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 372, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 116, in chat_completions
+    return await _execute_chat_completion(request, token)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 215, in _execute_chat_completion
+    return await _execute_prepared_request(request, token, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 227, in _execute_prepared_request
+    return await _complete_chat_request(conversation, cached_entry, request, token, query, files)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 239, in _complete_chat_request
+    await _run_non_streaming_ask(conversation, cached_entry, query, files)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 343, in _run_non_streaming_ask
+    await _run_sync_safely(partial(conversation.ask, query, files=files or None))
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 88, in _run_sync_safely
+    return await shield(task)
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Python314\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 146, in ask
+    self._execute(query, resolved_model, files, stream=stream)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 199, in _execute
+    self._complete(payload, model)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 280, in _complete
+    self._consume(payload)
+    ~~~~~~~~~~~~~^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 293, in _consume
+    self._apply_sse_data(data)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 247, in _apply_sse_data
+    answer, chunks, updated_results, raw_data = process_sse_data(
+                                                ~~~~~~~~~~~~~~~~^
+        data,
+        ^^^^^
+    ...<2 lines>...
+        self._schematized_state,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\parser.py", line 356, in process_sse_data
+    raise ResponseParsingError(
+    ...<2 lines>...
+    )
+perplexity_webui_scraper._internal.exceptions.ResponseParsingError: Failed to parse API response: Query processing failed: Error in processing query.
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\uvicorn\protocols\http\httptools_impl.py", line 422, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\applications.py", line 1194, in __call__
+    await super().__call__(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\telemetry\_asgi.py", line 151, in __call__
+    await self.app(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\bridge_daemon.py", line 45, in __call__
+    await self.app(scoped, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\app.py", line 90, in __call__
+    await self.app(scope, receive_body, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\routing.py", line 678, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 2811, in app
+    await route.handle(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 1839, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 2894, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 1865, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 1328, in handle
+    await effective_context.app(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 166, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 152, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 745, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\fastapi\routing.py", line 372, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 116, in chat_completions
+    return await _execute_chat_completion(request, token)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 215, in _execute_chat_completion
+    return await _execute_prepared_request(request, token, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 227, in _execute_prepared_request
+    return await _complete_chat_request(conversation, cached_entry, request, token, query, files)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 239, in _complete_chat_request
+    await _run_non_streaming_ask(conversation, cached_entry, query, files)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 343, in _run_non_streaming_ask
+    await _run_sync_safely(partial(conversation.ask, query, files=files or None))
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\api\routes\completions.py", line 88, in _run_sync_safely
+    return await shield(task)
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\asyncio\threads.py", line 26, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\concurrent\futures\thread.py", line 86, in run
+    result = ctx.run(self.task)
+  File "C:\Python314\Lib\concurrent\futures\thread.py", line 73, in run
+    return fn(*args, **kwargs)
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 146, in ask
+    self._execute(query, resolved_model, files, stream=stream)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 199, in _execute
+    self._complete(payload, model)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 280, in _complete
+    self._consume(payload)
+    ~~~~~~~~~~~~~^^^^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 293, in _consume
+    self._apply_sse_data(data)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\conversation.py", line 247, in _apply_sse_data
+    answer, chunks, updated_results, raw_data = process_sse_data(
+                                                ~~~~~~~~~~~~~~~~^
+        data,
+        ^^^^^
+    ...<2 lines>...
+        self._schematized_state,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\GNW\perplexity-browser-api\.venv\Lib\site-packages\perplexity_webui_scraper\core\parser.py", line 356, in process_sse_data
+    raise ResponseParsingError(
+    ...<2 lines>...
+    )
+perplexity_webui_scraper._internal.exceptions.ResponseParsingError: Failed to parse API response: Query processing failed: Error in processing query.
+==== GNW SECURE BRIDGE START 25/10/2026 13:10:29.73 ====
+BRIDGE_EXIT_CODE=1073807364
+==== GNW SECURE BRIDGE START 25/10/2026 15:49:01.70 ====
+==== GNW SECURE BRIDGE START 25/10/2026 16:00:44.12 ====
+==== GNW SECURE BRIDGE START 26/10/2026  1:07:21.58 ====
+BRIDGE_EXIT_CODE=
+==== GNW SECURE BRIDGE START 26/10/2026 19:22:19.98 ====
+BRIDGE_EXIT_CODE=
+==== GNW SECURE BRIDGE START 26/10/2026 21:54:17.97 ====

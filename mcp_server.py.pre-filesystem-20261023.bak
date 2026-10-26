@@ -1,0 +1,69 @@
+"""GNW-local MCP client. Uses only a scoped bridge key; upstream session remains in DPAPI."""
+import json
+import urllib.request
+import urllib.error
+from fastmcp import FastMCP
+from gnw_secrets import get_bridge_key
+
+BRIDGE_URL = "http://127.0.0.1:8000"
+mcp = FastMCP("perplexity-models")
+
+def _request(path: str, payload=None, timeout=120):
+    headers = {"Authorization": f"Bearer {get_bridge_key()}"}
+    data = None
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(BRIDGE_URL + path, data=data, headers=headers,
+                                 method="POST" if data is not None else "GET")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        # Avoid returning raw upstream error bodies that could contain sensitive details.
+        raise RuntimeError(f"Bridge API returned HTTP {e.code}") from None
+    except urllib.error.URLError:
+        raise RuntimeError("Local GNW bridge is unreachable") from None
+
+@mcp.tool()
+def perplexity_ask(model: str = "openai/gpt5", prompt: str = "",
+                   system_message: str = "You are a helpful expert assistant.") -> str:
+    """Send a prompt through the GNW-local isolated bridge."""
+    if not prompt or not prompt.strip():
+        return "Error: Prompt cannot be empty."
+    messages = []
+    if system_message:
+        messages.append({"role": "system", "content": system_message})
+    messages.append({"role": "user", "content": prompt})
+    try:
+        data = _request("/v1/chat/completions",
+                        {"model": model, "messages": messages, "stream": False})
+        choices = data.get("choices", [])
+        if choices:
+            return choices[0].get("message", {}).get("content", "")
+        return "Bridge returned no response choices."
+    except Exception as exc:
+        return f"Error: {exc}"
+
+@mcp.tool()
+def perplexity_list_models() -> str:
+    """List models available through the local bridge."""
+    try:
+        data = _request("/v1/models", timeout=15)
+        ids = sorted(m.get("id") for m in data.get("data", []) if m.get("id"))
+        return f"Total Models: {len(ids)}\n" + "\n".join(ids)
+    except Exception as exc:
+        return f"Error: {exc}"
+
+@mcp.tool()
+def perplexity_bridge_health() -> str:
+    """Check liveness of the localhost GNW bridge (does not prove upstream API health)."""
+    req = urllib.request.Request(BRIDGE_URL + "/health", method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.read().decode("utf-8")
+    except Exception:
+        return "Bridge offline or unreachable."
+
+if __name__ == "__main__":
+    mcp.run()

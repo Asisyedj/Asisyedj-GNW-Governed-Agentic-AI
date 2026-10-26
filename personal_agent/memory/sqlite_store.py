@@ -1,10 +1,12 @@
 """SQLite‑backed personal memory for the agent.
 
 The schema stores arbitrary key/value pairs per user, with a Unix timestamp.
+Values are serialized safely with JSON to avoid arbitrary code execution.
 """
 
 from __future__ import annotations
 
+import json
 import sqlite3
 import time
 from pathlib import Path
@@ -30,18 +32,34 @@ def _get_conn() -> sqlite3.Connection:
     return conn
 
 
+def _serialize_value(value: Any) -> str:
+    """Serialize value safely to JSON string."""
+    try:
+        return json.dumps(value, ensure_ascii=False)
+    except (TypeError, ValueError):
+        return json.dumps(str(value), ensure_ascii=False)
+
+
+def _deserialize_value(value_str: str) -> Any:
+    """Safely deserialize JSON string without using eval."""
+    try:
+        return json.loads(value_str)
+    except (json.JSONDecodeError, TypeError):
+        return value_str
+
+
 def add_fact(user_id: str, key: str, value: Any, ts: int | None = None) -> None:
     """Insert or replace a fact for a user.
 
-    ``value`` is stored as JSON‑compatible text via ``repr``; callers should ensure
-    it is serialisable.
+    ``value`` is stored as JSON text safely.
     """
     if ts is None:
         ts = int(time.time())
+    serialized = _serialize_value(value)
     conn = _get_conn()
     conn.execute(
         "INSERT OR REPLACE INTO facts (user_id, key, value, ts) VALUES (?, ?, ?, ?)",
-        (user_id, key, repr(value), ts),
+        (user_id, key, serialized, ts),
     )
     conn.commit()
     conn.close()
@@ -57,22 +75,17 @@ def get_fact(user_id: str, key: str) -> Tuple[Any, int] | None:
     conn.close()
     if row:
         value_str, ts = row
-        try:
-            value = eval(value_str)  # simple eval for primitive types; safe because we control writes
-        except Exception:
-            value = value_str
-        return value, ts
+        return _deserialize_value(value_str), ts
     return None
 
 
 def search_facts(user_id: str, pattern: str) -> List[Tuple[str, Any, int]]:
-    """Return a list of ``(key, value, ts)`` where ``key`` LIKE ``%pattern%``.
-    """
+    """Return a list of ``(key, value, ts)`` where ``key`` LIKE ``%pattern%``."""
     conn = _get_conn()
     cur = conn.execute(
         "SELECT key, value, ts FROM facts WHERE user_id = ? AND key LIKE ?",
         (user_id, f"%{pattern}%"),
     )
-    rows = [(k, eval(v) if v else v, t) for k, v, t in cur.fetchall()]
+    rows = [(k, _deserialize_value(v), t) for k, v, t in cur.fetchall()]
     conn.close()
     return rows

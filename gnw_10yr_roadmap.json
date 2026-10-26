@@ -1,0 +1,9 @@
+{\n  "goal": "Make GNW the #1 AI engineering swarm for the next 10 years",
+  "timeline": {\n    "2024": "Establish core governance and safety layers",
+    "2025": "Scale agent population to 10, achieve stable continuous‑loop operation",
+    "2026": "Integrate multi‑model support, surpass top‑3 competitors in benchmark scores",
+    "2027": "Public release of autonomous self‑improving swarm",
+    "2028": "Dominate AI‑enabled CI/CD automation market",
+    "2029": "Achieve sustained >95% uptime, zero critical failures",
+    "2030": "Maintain #1 ranking in independent AI swarm evaluations"
+  },\n  "milestones": [\n    {"id": 1, "description": "Verified source‑identity and healthy model", "status": "COMPLETED"},\n    {"id": 2, "description": "Continuous‑loop checkpoint infrastructure", "status": "IN_PROGRESS"},\n    {"id": 3, "description": "Publish roadmap as immutable proof", "status": "PENDING"}\n  ],\n  "created_at": "2026-10-26T21:20:00Z"\n}\n

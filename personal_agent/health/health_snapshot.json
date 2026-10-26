@@ -1,0 +1,590 @@
+{
+  "anthropic/claude-haiku-5.5": {
+    "catalog_status": "unknown",
+    "health_state": "unknown",
+    "last_error": null,
+    "last_probe_ts": null,
+    "latency_ms": []
+  },
+  "anthropic/claude-haiku-5.5-thinking": {
+    "catalog_status": "unknown",
+    "health_state": "unknown",
+    "last_error": null,
+    "last_probe_ts": null,
+    "latency_ms": []
+  },
+  "anthropic/claude-opus-4.7": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude-opus-4.7', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027161.2073896,
+    "latency_ms": []
+  },
+  "anthropic/claude-opus-4.7-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude-opus-4.7-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027164.8040545,
+    "latency_ms": []
+  },
+  "anthropic/claude-opus-4.8": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude-opus-4.8', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027135.4688761,
+    "latency_ms": []
+  },
+  "anthropic/claude-opus-4.8-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude-opus-4.8-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027139.8311906,
+    "latency_ms": []
+  },
+  "anthropic/claude-opus-5": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude-opus-5', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027120.6095505,
+    "latency_ms": []
+  },
+  "anthropic/claude-opus-5-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude-opus-5-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027121.5755682,
+    "latency_ms": []
+  },
+  "anthropic/claude-sonnet-4.6": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude-sonnet-4.6', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027167.9234517,
+    "latency_ms": []
+  },
+  "anthropic/claude-sonnet-4.6-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude-sonnet-4.6-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027170.1519122,
+    "latency_ms": []
+  },
+  "anthropic/claude-sonnet-5": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude-sonnet-5', 'perplexity/sonar-2', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027115.8094268,
+    "latency_ms": []
+  },
+  "anthropic/claude-sonnet-5-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude-sonnet-5-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027118.8292987,
+    "latency_ms": []
+  },
+  "anthropic/claude2": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude2', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027194.556542,
+    "latency_ms": []
+  },
+  "anthropic/claude37sonnetthinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude37sonnetthinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027195.5844278,
+    "latency_ms": []
+  },
+  "anthropic/claude40opus": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude40opus', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027213.830135,
+    "latency_ms": []
+  },
+  "anthropic/claude40opusthinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude40opusthinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027216.7471397,
+    "latency_ms": []
+  },
+  "anthropic/claude40sonnetthinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude40sonnetthinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027197.8911185,
+    "latency_ms": []
+  },
+  "anthropic/claude41opus": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude41opus', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027220.892978,
+    "latency_ms": []
+  },
+  "anthropic/claude41opusthinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude41opusthinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027224.5284255,
+    "latency_ms": []
+  },
+  "anthropic/claude45haiku": {
+    "catalog_status": "unavailable",
+    "health_state": "unavailable",
+    "last_error": null,
+    "last_probe_ts": null,
+    "latency_ms": []
+  },
+  "anthropic/claude45haikuthinking": {
+    "catalog_status": "unavailable",
+    "health_state": "unavailable",
+    "last_error": null,
+    "last_probe_ts": null,
+    "latency_ms": []
+  },
+  "anthropic/claude45opus": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude45opus', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027226.691277,
+    "latency_ms": []
+  },
+  "anthropic/claude45opusthinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude45opusthinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027227.8138201,
+    "latency_ms": []
+  },
+  "anthropic/claude45sonnet": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude45sonnet', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027230.1546822,
+    "latency_ms": []
+  },
+  "anthropic/claude45sonnetthinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude45sonnetthinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027230.736892,
+    "latency_ms": []
+  },
+  "anthropic/claude46opus": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude46opus', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027228.656014,
+    "latency_ms": []
+  },
+  "anthropic/claude46opusthinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['anthropic/claude46opusthinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027229.5041592,
+    "latency_ms": []
+  },
+  "google/gemini-3.1-pro-thinking-high": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['google/gemini-3.1-pro-thinking-high', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027130.7545173,
+    "latency_ms": []
+  },
+  "google/gemini-3.1-pro-thinking-low": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['google/gemini-3.1-pro-thinking-low', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027142.951072,
+    "latency_ms": []
+  },
+  "google/gemini-3.7-flash": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['google/gemini-3.7-flash', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027126.153194,
+    "latency_ms": []
+  },
+  "google/gemini-3.7-flash-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['google/gemini-3.7-flash-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027127.8236625,
+    "latency_ms": []
+  },
+  "google/gemini-4-argon": {
+    "catalog_status": "unknown",
+    "health_state": "unknown",
+    "last_error": null,
+    "last_probe_ts": null,
+    "latency_ms": []
+  },
+  "google/gemini-4-argon-thinking": {
+    "catalog_status": "unknown",
+    "health_state": "unknown",
+    "last_error": null,
+    "last_probe_ts": null,
+    "latency_ms": []
+  },
+  "google/gemini25pro": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['google/gemini25pro', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027199.871993,
+    "latency_ms": []
+  },
+  "google/gemini30flash": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['google/gemini30flash', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027202.4876046,
+    "latency_ms": []
+  },
+  "google/gemini30flash-high": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['google/gemini30flash-high', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027205.6866064,
+    "latency_ms": []
+  },
+  "google/gemini30pro": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['google/gemini30pro', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027200.75038,
+    "latency_ms": []
+  },
+  "google/gemini35flash": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['google/gemini35flash', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027207.4847465,
+    "latency_ms": []
+  },
+  "google/gemini35flash-high": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['google/gemini35flash-high', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027210.9422963,
+    "latency_ms": []
+  },
+  "google/gemini35flash-medium": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['google/gemini35flash-medium', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027209.7175453,
+    "latency_ms": []
+  },
+  "moonshot/kimi-k2.6-instant": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['moonshot/kimi-k2.6-instant', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027145.0792089,
+    "latency_ms": []
+  },
+  "moonshot/kimi-k2.6-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['moonshot/kimi-k2.6-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027149.283764,
+    "latency_ms": []
+  },
+  "moonshot/kimik25thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['moonshot/kimik25thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027232.0186903,
+    "latency_ms": []
+  },
+  "moonshot/kimik2thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['moonshot/kimik2thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027231.443024,
+    "latency_ms": []
+  },
+  "nvidia/nemotron-3-super-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['nvidia/nemotron-3-super-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027151.0254946,
+    "latency_ms": []
+  },
+  "nvidia/nemotron-3-ultra-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['nvidia/nemotron-3-ultra-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027112.5514176,
+    "latency_ms": []
+  },
+  "nvidia/nemotron-3.5-super-vl-thinking": {
+    "catalog_status": "unknown",
+    "health_state": "unknown",
+    "last_error": null,
+    "last_probe_ts": null,
+    "latency_ms": []
+  },
+  "openai/gpt-5.4": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt-5.4', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027152.0925858,
+    "latency_ms": []
+  },
+  "openai/gpt-5.4-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt-5.4-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027155.6600678,
+    "latency_ms": []
+  },
+  "openai/gpt-5.5-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt-5.5-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027157.9823267,
+    "latency_ms": []
+  },
+  "openai/gpt-5.6-sol": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt-5.6-sol', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027114.2787716,
+    "latency_ms": []
+  },
+  "openai/gpt-5.6-sol-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt-5.6-sol-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027114.7888772,
+    "latency_ms": []
+  },
+  "openai/gpt-5.6-terra": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt-5.6-terra', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027113.2111814,
+    "latency_ms": []
+  },
+  "openai/gpt-5.6-terra-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt-5.6-terra-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027113.8210695,
+    "latency_ms": []
+  },
+  "openai/gpt41": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt41', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027173.0328443,
+    "latency_ms": []
+  },
+  "openai/gpt4o": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt4o', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027171.607836,
+    "latency_ms": []
+  },
+  "openai/gpt5": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt5', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027174.7364244,
+    "latency_ms": []
+  },
+  "openai/gpt5-mini": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt5-mini', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027185.4907863,
+    "latency_ms": []
+  },
+  "openai/gpt5-nano": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt5-nano', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027186.4809215,
+    "latency_ms": []
+  },
+  "openai/gpt5-pro": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt5-pro', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027187.6161973,
+    "latency_ms": []
+  },
+  "openai/gpt5-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt5-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027176.8549354,
+    "latency_ms": []
+  },
+  "openai/gpt51": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt51', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027178.928549,
+    "latency_ms": []
+  },
+  "openai/gpt51-low-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt51-low-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027183.7453086,
+    "latency_ms": []
+  },
+  "openai/gpt51-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt51-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027181.6434941,
+    "latency_ms": []
+  },
+  "openai/gpt52": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt52', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027188.967713,
+    "latency_ms": []
+  },
+  "openai/gpt52-pro": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt52-pro', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027191.6731489,
+    "latency_ms": []
+  },
+  "openai/gpt52-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt52-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027190.7544665,
+    "latency_ms": []
+  },
+  "openai/gpt55": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/gpt55', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027193.2418125,
+    "latency_ms": []
+  },
+  "openai/o3pro": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/o3pro', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027236.5839598,
+    "latency_ms": []
+  },
+  "openai/o4mini": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['openai/o4mini', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027236.0205219,
+    "latency_ms": []
+  },
+  "perplexity/sonar-2": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027128.8187532,
+    "latency_ms": []
+  },
+  "x-ai/grok": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['x-ai/grok', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027211.979881,
+    "latency_ms": []
+  },
+  "x-ai/grok-4.5": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['x-ai/grok-4.5', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027131.484603,
+    "latency_ms": []
+  },
+  "x-ai/grok-4.5-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['x-ai/grok-4.5-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027133.2876096,
+    "latency_ms": []
+  },
+  "x-ai/grok-4.6": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['x-ai/grok-4.6', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027123.2156067,
+    "latency_ms": []
+  },
+  "x-ai/grok-4.6-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['x-ai/grok-4.6-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027124.8950725,
+    "latency_ms": []
+  },
+  "x-ai/grok-4.7": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['x-ai/grok-4.7', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027111.4836748,
+    "latency_ms": []
+  },
+  "x-ai/grok-4.7-thinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['x-ai/grok-4.7-thinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027112.05904,
+    "latency_ms": []
+  },
+  "x-ai/grok4": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['x-ai/grok4', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027232.6329596,
+    "latency_ms": []
+  },
+  "x-ai/grok41nonreasoning": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['x-ai/grok41nonreasoning', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027235.0592482,
+    "latency_ms": []
+  },
+  "x-ai/grok41reasoning": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['x-ai/grok41reasoning', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027233.9616978,
+    "latency_ms": []
+  },
+  "x-ai/grok4nonthinking": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['x-ai/grok4nonthinking', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027233.166433,
+    "latency_ms": []
+  },
+  "z-ai/glm-5.2": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['z-ai/glm-5.2', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027129.6916928,
+    "latency_ms": []
+  },
+  "z-ai/glm-5.3": {
+    "catalog_status": "available",
+    "health_state": "quarantined",
+    "last_error": "All model candidates failed. Attempted: ['z-ai/glm-5.3', 'perplexity/sonar-2', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'google/gemini-3.7-flash', 'x-ai/grok-4.5', 'nvidia/nemotron-3-ultra-thinking', 'openai/gpt-5.6-sol']. Last error: Server error '503 Service Unavailable' for url 'http://127.0.0.1:8000/v1/chat/completions'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503",
+    "last_probe_ts": 1793027110.7161322,
+    "latency_ms": []
+  }
+}

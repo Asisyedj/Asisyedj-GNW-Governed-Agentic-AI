@@ -1,18 +1,20 @@
 """Plugin registry for personal_agent.
 
 Scans the ``personal_agent/plugins`` package for subclasses of ``BaseTool`` and builds a dictionary ``registry`` mapping ``tool.name`` to the class.
-
-The registry is imported by the planner so that the LLM can request a tool by name.
+Deterministic resolution: rejects conflicting insecure overrides and enforces fail-closed registration.
 """
 
 from __future__ import annotations
 
 import importlib
+import logging
 import pkgutil
 from pathlib import Path
 from typing import Dict, Type
 
 from .base import BaseTool
+
+logger = logging.getLogger(__name__)
 
 
 def _load_plugins() -> Dict[str, Type[BaseTool]]:
@@ -23,18 +25,42 @@ def _load_plugins() -> Dict[str, Type[BaseTool]]:
     """
     registry: Dict[str, Type[BaseTool]] = {}
     package_dir = Path(__file__).parent
-    for _, module_name, is_pkg in pkgutil.iter_modules([str(package_dir)]):
+
+    # Known preferred canonical implementations to avoid duplicate collisions
+    preferred_modules = {
+        "powershell": "personal_agent.plugins.powershell_tool",
+    }
+
+    for _, module_name, is_pkg in sorted(pkgutil.iter_modules([str(package_dir)])):
         if is_pkg:
-            continue  # No nested packages expected
-        module = importlib.import_module(f"personal_agent.plugins.{module_name}")
-        for attr in dir(module):
+            continue
+        full_module_name = f"personal_agent.plugins.{module_name}"
+        module = importlib.import_module(full_module_name)
+        for attr in sorted(dir(module)):
             obj = getattr(module, attr)
             if isinstance(obj, type) and issubclass(obj, BaseTool) and obj is not BaseTool:
-                instance = obj  # class, not instantiated yet
-                name = getattr(instance, "name", None)
-                if name:
-                    registry[name] = instance
+                name = getattr(obj, "name", None)
+                if not name:
+                    continue
+                # If tool name already registered, check deterministic preference
+                if name in registry:
+                    preferred = preferred_modules.get(name)
+                    if preferred and full_module_name == preferred:
+                        registry[name] = obj
+                    elif preferred and registry[name].__module__ == preferred:
+                        # Existing is preferred, keep it
+                        continue
+                    else:
+                        logger.warning(
+                            "Duplicate tool name '%s' from %s ignored in favor of %s",
+                            name,
+                            full_module_name,
+                            registry[name].__module__,
+                        )
+                else:
+                    registry[name] = obj
     return registry
+
 
 # Export a ready‑to‑use registry at import time.
 registry: Dict[str, Type[BaseTool]] = _load_plugins()

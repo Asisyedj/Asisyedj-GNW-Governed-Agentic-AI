@@ -1,0 +1,95 @@
+{
+  "timestamp": "2026-10-26T00:00:00Z",
+  "session_id": "ses_e88150ca8ffeRusl8i8kSXNcZa",
+  "phase": "ALL_P0_P1_P2_P3_COMPLETE",
+  "bridge": {
+    "status": "HEALTHY",
+    "pid": 12372,
+    "port": 8000,
+    "health_endpoint": "PASS",
+    "models_endpoint": "PASS (84 models available after DISABLED_MODELS filter)",
+    "chat_endpoint": "UPSTREAM_503 (Perplexity service unavailable - external dependency)"
+  },
+  "supervisor": {
+    "state": "HEALTHY",
+    "failures": 0,
+    "restarts": 1,
+    "check_interval_sec": 30,
+    "failure_threshold": 3,
+    "recovery_cooldown_sec": 60,
+    "max_restarts": 5,
+    "port_release_wait_sec": 5
+  },
+  "model_health": {
+    "total_catalog": 99,
+    "catalog_available": 92,
+    "catalog_unknown": 5,
+    "catalog_unavailable": 2,
+    "healthy": 0,
+    "unverified": 92,
+    "quarantined": 0,
+    "unknown": 5,
+    "unavailable": 2,
+    "blocker": "Perplexity upstream 503 on all chat/completions - external dependency",
+    "snapshot_persistence": "IMPLEMENTED (load_snapshot/save_snapshot)"
+  },
+  "nvidia_models": {
+    "available_in_opencode": 12,
+    "nemotron_3_5_super_vl_120b": "nvidia/nvidia/nemotron-3.5-super-vl-120b-a12b",
+    "nemotron_3_5_bolt_e4b": "NOT_IN_CATALOG",
+    "free_access_verified": true,
+    "rate_limits": "Unknown - free tier"
+  },
+  "opencode": {
+    "version": "v2.1.2",
+    "providers_configured": ["nvidia", "deepseek", "google", "openai", "opencode", "perplexity-agent"],
+    "auth_status": "NVIDIA_CONNECTED"
+  },
+  "next_actions": [
+    "Monitor Perplexity upstream status for 503 resolution (Antigravity - external dependency)",
+    "Router circuit breaker handles 503 as transient - COMPLETED",
+    "Health snapshot persistence - COMPLETED",
+    "Nemotron 3.5 Super VL integrated into DEFAULT_TASK_ROUTING - COMPLETED",
+    "OpenCode agents created - COMPLETED (.opencode/agents/)"
+  ],
+  "verification": {
+    "test_suite": "29/29 PASSED",
+    "test_api": "HEALTH_CHECK=PASS, UNAUTHORIZED_REQUEST=PASS, AUTHENTICATED_MODELS=PASS (84), API_INVOCATION=UPSTREAM_503",
+    "supervisor_state_machine": "FAILED -> RECOVERING -> HEALTHY verified (reaches HEALTHY in ~30s)",
+    "router_transient_503": "VERIFIED - 503 does not trip circuit breaker, falls back correctly",
+    "git_dirty_files": 12,
+    "governance_files_created": 6,
+    "opencode_agents_created": 4
+  },
+  "git": {
+    "branch": "master",
+    "commit": "fc9d350",
+    "dirty_files": [
+      "personal_agent/agent/llm.py",
+      "personal_agent/agent/planner.py",
+      "personal_agent/memory/sqlite_store.py",
+      "personal_agent/plugins/registry.py",
+      "bridge_daemon.py",
+      "personal_agent/bridge/supervisor.py",
+      "personal_agent/agent/router.py",
+      "personal_agent/health/model_health.py",
+      "personal_agent/tests/test_model_router_and_resilience.py",
+      "test_api.py",
+      "pyproject.toml"
+    ],
+    "governance_files_created": [
+      "GNW_MISSION.md",
+      "GNW_BACKLOG.md",
+      "GNW_STATE.json",
+      "GNW_EVIDENCE.md",
+      "GNW_RISK_REGISTER.md",
+      "GNW_OPEN_CODE_HANDOFF.md"
+    ],
+    "opencode_agents_created": [
+      ".opencode/agents/researcher.json",
+      ".opencode/agents/architect.json",
+      ".opencode/agents/tester.json",
+      ".opencode/agents/security.json"
+    ]
+  }
+}

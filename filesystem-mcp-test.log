@@ -1,0 +1,9 @@
+PASS: six expected MCP tools registered
+PASS: allowed directory listing
+PASS: read allowed UTF-8 file
+PASS: blocked environment secrets
+PASS: blocked path outside configured root
+PASS: write new file
+PASS: read back written file
+PASS: refuse overwrite by default
+FILESYSTEM_MCP_TEST=PASS

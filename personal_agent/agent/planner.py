@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from . import llm as llm_mod
+from .router import TaskCategory
 from personal_agent.plugins.registry import registry
 from personal_agent.safety.guard import is_safe
 
@@ -60,6 +61,8 @@ def plan(
     *,
     approve_tool: ApprovalCallback | None = None,
     model_name: str | None = None,
+    task_category: TaskCategory | str | None = None,
+    use_routing_fallback: bool = False,
 ) -> dict[str, Any]:
     """Plan a response; execute a proposed tool only after explicit approval.
 
@@ -76,7 +79,11 @@ def plan(
         {"role": "user", "content": user_input},
     ]
     try:
-        if model_name:
+        if use_routing_fallback or task_category:
+            category = TaskCategory(task_category) if task_category else TaskCategory.DEFAULT
+            routed_res = llm_mod.call_llm_routed(messages, task_category=category, model_name=model_name)
+            raw_response = routed_res.get("content", "")
+        elif model_name:
             raw_response = llm_mod.call_llm_with_model(messages, model_name=model_name)
         else:
             raw_response = llm_mod.call_llm(messages)

@@ -6,11 +6,20 @@ Defaults match the local development bridge; configure via environment variables
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import Any, Optional
 
 import httpx
 
-DEFAULT_BASE_URL = "http://127.0.0.1:8000/v1"
+from .router import (
+    DEFAULT_BRIDGE_URL,
+    ModelRouter,
+    PolicyViolationError,
+    RouterExhaustionError,
+    TaskCategory,
+    global_router,
+)
+
+DEFAULT_BASE_URL = DEFAULT_BRIDGE_URL
 DEFAULT_MODEL = "perplexity/deep-research"
 
 
@@ -30,11 +39,14 @@ class LLMWrapper:
         model_name: str | None = None,
         api_key: str | None = None,
         timeout: float | None = None,
+        router: Optional[ModelRouter] = None,
     ) -> None:
         self.base_url = (base_url or os.getenv("PERPLEXITY_BASE_URL", DEFAULT_BASE_URL)).rstrip("/")
         self.model_name = model_name or os.getenv("PERPLEXITY_MODEL", DEFAULT_MODEL)
         self.api_key = api_key if api_key is not None else os.getenv("PERPLEXITY_API_KEY", "")
         self.timeout = timeout or float(os.getenv("PERPLEXITY_TIMEOUT_SECONDS", "90"))
+        self.router = router or global_router
+
         if not self.base_url.startswith(("http://127.0.0.1", "http://localhost", "https://")):
             raise LLMConfigurationError("PERPLEXITY_BASE_URL must use localhost HTTP or HTTPS.")
         if not self.model_name.strip():
@@ -69,6 +81,23 @@ class LLMWrapper:
             raise LLMBridgeError("Bridge response content was not text.")
         return content
 
+    def call_routed(
+        self,
+        messages: list[dict[str, Any]],
+        task_category: TaskCategory = TaskCategory.DEFAULT,
+        model_name: str | None = None,
+    ) -> dict[str, Any]:
+        """Execute chat completion using dynamic routing with circuit-breaker and fallback."""
+        if not isinstance(messages, list) or not messages:
+            raise ValueError("messages must be a non-empty list.")
+        target_model = model_name or self.model_name
+        return self.router.execute_with_fallback(
+            messages=messages,
+            requested_model=target_model,
+            task_category=task_category,
+            timeout=self.timeout,
+        )
+
 
 _llm = LLMWrapper()
 
@@ -88,3 +117,12 @@ def call_llm_with_model(messages: list[dict[str, Any]], model_name: str | None =
     else:
         wrapper = _llm
     return wrapper.call(messages)
+
+
+def call_llm_routed(
+    messages: list[dict[str, Any]],
+    task_category: TaskCategory = TaskCategory.DEFAULT,
+    model_name: str | None = None,
+) -> dict[str, Any]:
+    """Call the bridge using the dynamic model router with automated fallback."""
+    return _llm.call_routed(messages, task_category=task_category, model_name=model_name)
