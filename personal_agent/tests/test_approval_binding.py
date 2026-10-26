@@ -320,7 +320,9 @@ class TestApprovalStore:
         # Verify field order in JSON
         parsed = json.loads(canonical1)
         keys = list(parsed.keys())
-        assert keys == store_obj.CANONICAL_FIELDS[:len(keys)]  # Only non-None fields
+        # Filter CANONICAL_FIELDS to only non-None fields, preserving order
+        expected_keys = [f for f in store_obj.CANONICAL_FIELDS if approval.get(f) is not None]
+        assert keys == expected_keys
 
 
 class TestApprovalStoreConcurrency:

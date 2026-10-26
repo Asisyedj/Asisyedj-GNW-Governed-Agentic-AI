@@ -1,0 +1,8 @@
+   Building perplexity-browser-api @ file:///D:/GNW/perplexity-browser-api
+      Built perplexity-browser-api @ file:///D:/GNW/perplexity-browser-api
+Uninstalled 1 package in 583ms
+warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 4 packages in 39.60s
+Installed 6 packages in 3.65s
