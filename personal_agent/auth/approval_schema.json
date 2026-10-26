@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gnw.ai/schemas/approval/v1",
+  "title": "GNW Approval Canonical Schema",
+  "description": "Canonical JSON representation for approval HMAC signing. Field order is significant for deterministic serialization.",
+  "type": "object",
+  "properties": {
+    "approval_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique approval identifier"
+    },
+    "approver_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identity of the approver (human or system)"
+    },
+    "actor_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identity of the actor authorized to perform the action"
+    },
+    "agent_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "Optional agent identifier if action is delegated"
+    },
+    "tenant_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Tenant scope for multi-tenant isolation"
+    },
+    "action_type": {
+      "type": "string",
+      "description": "Type of action being approved (e.g., 'file_write', 'network_request', 'code_exec')"
+    },
+    "action_args_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 hex digest of canonicalized action arguments"
+    },
+    "resource_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "Optional specific resource this approval applies to"
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["global", "tenant", "resource", "session"],
+      "description": "Scope of the approval"
+    },
+    "policy_version": {
+      "type": "string",
+      "description": "Version of the policy under which this approval was granted"
+    },
+    "valid_from": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when approval becomes valid"
+    },
+    "valid_until": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when approval expires"
+    }
+  },
+  "required": [
+    "approval_id",
+    "approver_id",
+    "actor_id",
+    "tenant_id",
+    "action_type",
+    "action_args_hash",
+    "scope",
+    "policy_version",
+    "valid_from",
+    "valid_until"
+  ],
+  "additionalProperties": false,
+  "propertyOrder": [
+    "approval_id",
+    "approver_id",
+    "actor_id",
+    "agent_id",
+    "tenant_id",
+    "action_type",
+    "action_args_hash",
+    "resource_id",
+    "scope",
+    "policy_version",
+    "valid_from",
+    "valid_until"
+  ]
+}

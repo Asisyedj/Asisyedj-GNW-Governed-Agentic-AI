@@ -32,6 +32,7 @@ import threading
 import time
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 from typing import Optional
 
@@ -195,13 +196,42 @@ class BridgeSupervisor:
     via :meth:`status` for UI panels or external monitoring.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, state_store: Optional[ExecutionStateStore] = None) -> None:
+        # Lazy import to break circular import with personal_agent.state.persistence
+        from personal_agent.state.persistence import get_state_store, ExecutionStateStore
+
         self._state: BridgeState = BridgeState.FAILED
         self._failures: int = 0
         self._restart_count: int = 0
         self._process: Optional[subprocess.Popen] = None
         self._thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
+        self._state_store = state_store or get_state_store()
+        self._execution_id = uuid.uuid4()  # Unique ID for this supervisor run
+        
+        # Attempt to recover state from persistence
+        self._recover_state()
+
+    def _recover_state(self) -> None:
+        """Restore supervisor state from persistent storage on startup."""
+        try:
+            recovered_state, failures, restart_count = self._state_store.restore_supervisor_state()
+            if recovered_state:
+                # Validate the recovered state is a valid BridgeState
+                try:
+                    self._state = BridgeState(recovered_state)
+                    self._failures = failures
+                    self._restart_count = restart_count
+                    logger.info(
+                        "BridgeSupervisor: recovered state=%s failures=%d restarts=%d from persistence",
+                        self._state, self._failures, self._restart_count
+                    )
+                except ValueError:
+                    logger.warning("BridgeSupervisor: invalid recovered state %r, starting fresh", recovered_state)
+            else:
+                logger.info("BridgeSupervisor: no prior state found, starting fresh")
+        except Exception as exc:
+            logger.warning("BridgeSupervisor: failed to recover state: %s", exc)
 
     # -------------------------------------------------------------------
     # Public API
@@ -255,7 +285,7 @@ class BridgeSupervisor:
         # 2️⃣ Health check – fast local endpoint.
         if not _health_check():
             logger.warning("BridgeSupervisor: health endpoint unreachable – marking degraded")
-            self._transition(BridgeState.DEGRADED)
+            self._transition(BridgeState.DEGRADED, trigger="health_check", metadata={"check": "health_endpoint"})
             self._failures += 1
             if self._failures >= FAILURE_THRESHOLD:
                 self._restart_or_fail()
@@ -264,14 +294,15 @@ class BridgeSupervisor:
         # 3️⃣ Auth check – ensure the bridge key and session token are valid.
         if not _auth_check():
             logger.warning("BridgeSupervisor: authenticated call failed – auth required")
-            self._transition(BridgeState.AUTH_REQUIRED)
+            self._transition(BridgeState.AUTH_REQUIRED, trigger="auth_check", metadata={"check": "authenticated_call"})
             # Attempt a session refresh before giving up.
             if _run_refresh_token():
                 # Refresh succeeded – give the bridge a chance to recover.
-                self._transition(BridgeState.RECOVERING)
+                self._transition(BridgeState.RECOVERING, trigger="auth_check", metadata={"check": "token_refresh", "refresh_result": "success"})
                 time.sleep(RECOVERY_COOLDOWN)
                 self._restart_or_fail()
             else:
+                self._transition(BridgeState.AUTH_REQUIRED, trigger="auth_check", metadata={"check": "token_refresh", "refresh_result": "failed"})
                 self._failures += 1
                 if self._failures >= FAILURE_THRESHOLD:
                     self._restart_or_fail()
@@ -279,24 +310,47 @@ class BridgeSupervisor:
 
         # 4️⃣ All good – reset counters and mark healthy.
         self._failures = 0
-        self._transition(BridgeState.HEALTHY)
+        self._transition(BridgeState.HEALTHY, trigger="health_check", metadata={"check": "all_clear"})
 
     # -------------------------------------------------------------------
     # State helpers
     # -------------------------------------------------------------------
-    def _transition(self, new_state: BridgeState) -> None:
+    def _transition(self, new_state: BridgeState, trigger: str = "state_change", metadata: Optional[dict] = None) -> None:
         if self._state != new_state:
+            prev_state = self._state
             logger.info("BridgeSupervisor: state %s → %s", self._state, new_state)
             self._state = new_state
+            
+            # Persist the transition
+            try:
+                transition_metadata = {
+                    "failures": self._failures,
+                    "restart_count": self._restart_count,
+                    "pid": self._process.pid if self._process else None,
+                }
+                if metadata:
+                    transition_metadata.update(metadata)
+                
+                self._state_store.record_transition(
+                    execution_id=self._execution_id,
+                    component="supervisor",
+                    from_state=str(prev_state),
+                    to_state=str(new_state),
+                    trigger=trigger,
+                    actor="supervisor",
+                    metadata=transition_metadata,
+                )
+            except Exception as exc:
+                logger.warning("BridgeSupervisor: failed to persist transition: %s", exc)
 
     def _start_or_fail(self) -> None:
         try:
             self._process = _start_bridge_process()
             self._restart_count += 1
-            self._transition(BridgeState.RECOVERING)
+            self._transition(BridgeState.RECOVERING, trigger="restart", metadata={"action": "start_bridge", "restart_count": self._restart_count})
         except Exception as exc:
             logger.error("BridgeSupervisor: failed to start bridge – %s", exc)
-            self._transition(BridgeState.FAILED)
+            self._transition(BridgeState.FAILED, trigger="restart", metadata={"action": "start_bridge", "error": str(exc), "restart_count": self._restart_count})
             self._failures += 1
             if self._restart_count >= MAX_RESTARTS:
                 logger.critical("BridgeSupervisor: max restarts exceeded – giving up")

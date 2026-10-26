@@ -1,25 +1,19 @@
 [project]
 name = "perplexity-browser-api"
 version = "0.1.0"
-description = "Add your description here"
+description = "GNW Governed Agent - Perplexity Browser API"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "perplexity-webui-scraper[all]>=1.2.1",
+    "psycopg[pool]>=3.1.18",
+    "psycopg-pool>=3.1.0",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["personal_agent/tests"]
 python_files = ["test_*.py"]
 addopts = "-q"
-name = "perplexity-browser-api"
-version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.14"
-dependencies = [
-    "perplexity-webui-scraper[all]>=1.2.1",
-]
 
 [project.scripts]
 perplexity-browser-api = "perplexity_browser_api:main"

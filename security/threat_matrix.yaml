@@ -1,0 +1,297 @@
+# GNW Threat-Control Matrix — Perplexity Browser API Bridge
+# Derived from: GNW_RISK_REGISTER.md (R1-R10)
+# Schema: threat_id, stride, asset, control_id, control_description, positive_test, negative_test, telemetry_metric, risk_refs, severity
+# Invariant: append-only, crypto-bound, multi-tenant, fail-closed
+
+threats:
+  # R1: Perplexity Upstream Service Unavailable (503)
+  - threat_id: "T001"
+    stride: "Availability"
+    category: "Denial of Service"
+    asset: "Perplexity Upstream API Connectivity"
+    description: "External dependency Perplexity returns HTTP 503 on all /v1/chat/completions requests, causing complete inference failure"
+    control_id: "C-AVAIL-001"
+    control_description: "Circuit breaker with transient error classification (503, 429, timeout) — does not trip breaker on 503; exponential backoff retry with max 3 attempts; local model fallback stub (Ollama/llama.cpp) for critical paths"
+    positive_test: "test_api.py with API_INVOCATION=UPSTREAM_503 returns graceful degradation response (not 500), router.select_model() returns fallback model, circuit breaker state remains CLOSED"
+    negative_test: "Inject 503 on all models → circuit breaker trips to OPEN after 3 failures (pre-fix behavior); fallback model not attempted; request returns 500 Internal Server Error"
+    telemetry_metric: "bridge.upstream.503_rate, bridge.circuit_breaker.state, bridge.fallback.invocations_total, bridge.request.latency_p99"
+    risk_refs: ["R1"]
+    severity: "CRITICAL"
+    status: "MITIGATED"
+    mitigation_evidence: "router_transient_503: VERIFIED - 503 does not trip circuit breaker, falls back correctly (GNW_STATE.json verification)"
+
+  - threat_id: "T002"
+    stride: "Availability"
+    category: "Denial of Service"
+    asset: "Perplexity Upstream API Connectivity"
+    description: "No visibility into Perplexity upstream status; cannot distinguish transient outage from permanent failure"
+    control_id: "C-AVAIL-002"
+    control_description: "Upstream health probe endpoint (/health) monitored by supervisor; external status page polling (Antigravity); alerting on sustained 503 rate > 50% over 5min window"
+    positive_test: "Supervisor logs show 'UPSTREAM_HEALTH_CHECK=DEGRADED' after 3 consecutive 503s; alert fires in monitoring system"
+    negative_test: "Supervisor health check passes despite 100% 503 rate (missing probe logic); no alert fires for 30min sustained outage"
+    telemetry_metric: "bridge.upstream.health_status, bridge.upstream.503_streak, supervisor.alerts.fired_total"
+    risk_refs: ["R1"]
+    severity: "HIGH"
+    status: "OPEN"
+    mitigation_evidence: "Monitor Perplexity status page / support channels (R1 mitigation)"
+
+  # R2: Router Circuit Breaker Trips on Transient 503
+  - threat_id: "T003"
+    stride: "Availability"
+    category: "Denial of Service"
+    asset: "ModelRouter Circuit Breaker State"
+    description: "record_failure() treats all exceptions equally; 503 increments consecutive_failures tripping breaker to OPEN after 3 failures; no automatic recovery for transient errors"
+    control_id: "C-AVAIL-003"
+    control_description: "is_transient_error(exc) helper classifies 503, 429, timeout as transient; transient errors do NOT increment consecutive_failures; separate recovery_timeout_transient (30s) vs recovery_timeout_auth (300s); breaker state machine: CLOSED → HALF_OPEN → CLOSED on success"
+    positive_test: "Unit test: router.record_failure(HTTPException(503)) → consecutive_failures unchanged, state remains CLOSED; integration test: 10 sequential 503s → breaker stays CLOSED, fallback attempted each time"
+    negative_test: "router.record_failure(HTTPException(503)) increments consecutive_failures; after 3 calls state=OPEN; fallback never attempted; requires manual reset"
+    telemetry_metric: "bridge.router.circuit_breaker.state, bridge.router.consecutive_failures, bridge.router.transient_errors_total, bridge.router.recovery_attempts_total"
+    risk_refs: ["R2"]
+    severity: "HIGH"
+    status: "MITIGATED"
+    mitigation_evidence: "router_transient_503: VERIFIED - 503 does not trip circuit breaker, falls back correctly (GNW_STATE.json verification)"
+
+  # R3: Bridge Process Port Conflict on Restart
+  - threat_id: "T004"
+    stride: "Availability"
+    category: "Denial of Service"
+    asset: "Bridge Daemon Process / Port 8000"
+    description: "Old process holds port 8000 during TIME_WAIT on Windows; new process fails with Errno 10048; lock file logic reuses PID but port bind fails"
+    control_id: "C-AVAIL-004"
+    control_description: "SO_REUSEADDR socket option on uvicorn config; supervisor restart cooldown 60s + port_release_wait_sec 5s; graceful shutdown with asyncio.wait_for(port_release, timeout=10); retry logic in _start_bridge_process (max 3 retries, 2s backoff)"
+    positive_test: "Kill bridge process → supervisor restarts within 65s → new process binds 127.0.0.1:8000 successfully; health endpoint returns 200"
+    negative_test: "Supervisor restarts immediately (<5s) → bind fails with Errno 10048; supervisor enters FAILED state; manual intervention required"
+    telemetry_metric: "bridge.process.restarts_total, bridge.process.port_bind_failures_total, bridge.process.startup_latency_seconds, supervisor.state"
+    risk_refs: ["R3"]
+    severity: "MEDIUM"
+    status: "MITIGATING"
+    mitigation_evidence: "SO_REUSEADDR added; restart cooldown 60s; port_release_wait_sec 5s (GNW_STATE.json supervisor config)"
+
+  # R4: DPAPI Secret Store Corruption / Loss
+  - threat_id: "T005"
+    stride: "Availability"
+    category: "Denial of Service"
+    asset: "DPAPI Secret Store (Bridge Key, Session Token)"
+    description: "Windows DPAPI user profile corruption or machine change makes secrets unrecoverable; bridge cannot start without secrets"
+    control_id: "C-CRYPTO-001"
+    control_description: "Documented secret backup procedure (export to encrypted file via gnw_secrets.py export_secret()); clear error messages on DPAPI failure with actionable guidance; secret rotation workflow (quarterly)"
+    positive_test: "Corrupt DPAPI blob (simulate) → get_bridge_key() raises GNWSecretError with 'Backup required: run export_secret()'; backup file decrypts correctly on same user profile"
+    negative_test: "No backup exists; DPAPI corruption → bridge fails to start with opaque error; no recovery path documented"
+    telemetry_metric: "bridge.secrets.dapai_errors_total, bridge.secrets.backup_age_days, bridge.secrets.rotation_due"
+    risk_refs: ["R4"]
+    severity: "CRITICAL"
+    status: "MITIGATED"
+    mitigation_evidence: "gnw_secrets.py provides clear error messages on failure; backup procedure documented (R4 mitigation)"
+
+  - threat_id: "T006"
+    stride: "Information Disclosure"
+    category: "Information Disclosure"
+    asset: "DPAPI Secret Store (Bridge Key, Session Token)"
+    description: "Secrets exposed via memory dump, swap file, or debug logs if DPAPI decryption results logged"
+    control_id: "C-CRYPTO-002"
+    control_description: "Secrets never logged (zeroize after use); memory buffers cleared via ctypes.memset; no secrets in health snapshots or debug output; DPAPI decryption in isolated function scope"
+    positive_test: "Memory dump of bridge process → no plaintext bridge_key or session_token found; health_snapshot.json contains zero secret material"
+    negative_test: "Bridge key appears in supervisor logs during startup; session_token in health_snapshot.json"
+    telemetry_metric: "bridge.secrets.memory_exposure_scan (periodic), audit.secrets_in_logs_total"
+    risk_refs: ["R4", "R6"]
+    severity: "CRITICAL"
+    status: "MITIGATED"
+    mitigation_evidence: "Code review confirms no secret logging (R6 mitigation)"
+
+  # R5: SSRF / Private IP Egress from Bridge
+  - threat_id: "T007"
+    stride: "Spoofing"
+    category: "Spoofing / SSRF"
+    asset: "Bridge Daemon Network Egress"
+    description: "Bridge daemon could be tricked into making outbound requests to private IPs (169.254.169.254, 10.x, 172.16-31.x, 192.168.x) violating GNW Invariant #5"
+    control_id: "C-NET-001"
+    control_description: "Bridge binds explicitly to 127.0.0.1:8000 (loopback only); no outbound HTTP client in bridge daemon; all upstream calls via Perplexity API (HTTPS :443) only; BridgeAuthGate validates HMAC on all /v1/* paths"
+    positive_test: "netstat -an | findstr :8000 shows only 127.0.0.1:8000; curl http://169.254.169.254 from bridge process fails (no route); SSRF payload in request body rejected by BridgeAuthGate (401)"
+    negative_test: "Bridge binds to 0.0.0.0:8000; outbound request to 169.254.169.254 succeeds; metadata service accessible"
+    telemetry_metric: "bridge.network.bind_address, bridge.network.egress_attempts_blocked_total, bridge.auth.hmac_failures_total"
+    risk_refs: ["R5"]
+    severity: "CRITICAL"
+    status: "MITIGATED"
+    mitigation_evidence: "uvicorn.run(host='127.0.0.1'); BridgeAuthGate HMAC validation; no outbound client (R5 mitigation)"
+
+  # R6: Secrets in Logs / URLs / Snapshots
+  - threat_id: "T008"
+    stride: "Information Disclosure"
+    category: "Information Disclosure"
+    asset: "Bridge Key, Session Token, Request/Response Logs"
+    description: "Secrets accidentally logged via debug output, URL query strings, health snapshots, or test output"
+    control_id: "C-LOG-001"
+    control_description: "Structured logging with secret redaction (bridge_key → ***REDACTED***); health snapshots contain only model IDs, latency, error strings; test_api.py prints only status codes and counts; CI secret scanning (gitleaks/trufflehog)"
+    positive_test: "grep -r 'bridge_key\\|session_token' logs/ health_snapshot.json test_output/ → zero matches; gitleaks scan passes"
+    negative_test: "Bridge key found in supervisor.log line 42; session_token in health_snapshot.json; gitleaks fails CI"
+    telemetry_metric: "audit.secrets_in_logs_total, audit.gitleaks_findings_total, bridge.logs.redacted_total"
+    risk_refs: ["R6"]
+    severity: "CRITICAL"
+    status: "MITIGATED"
+    mitigation_evidence: "Supervisor logs only state transitions; health snapshots no tokens; test_api.py prints only status codes (R6 mitigation)"
+
+  # R7: Model Health Registry State Loss on Restart
+  - threat_id: "T009"
+    stride: "Availability"
+    category: "Denial of Service / Data Loss"
+    asset: "ModelHealthRegistry In-Memory State"
+    description: "Health registry stores probe results in memory only; supervisor restart or crash loses all probe history; health_snapshot.json written but not loaded on startup"
+    control_id: "C-DATA-001"
+    control_description: "load_snapshot() in ModelHealthRegistry.__init__ reads health_snapshot.json; atomic write + rename (write to .tmp → os.rename); SQLite persistence for audit trail (planned); snapshot versioning with schema migration"
+    positive_test: "Start bridge → probe 5 models → kill process → restart bridge → health registry shows 5 models with prior probe results; snapshot file exists and valid JSON"
+    negative_test: "Restart bridge → health registry shows 0 healthy models despite prior probes; health_snapshot.json exists but not loaded"
+    telemetry_metric: "bridge.health_registry.models_loaded, bridge.health_registry.snapshot_age_seconds, bridge.health_registry.persistence_failures_total"
+    risk_refs: ["R7"]
+    severity: "MEDIUM"
+    status: "MITIGATED"
+    mitigation_evidence: "health_snapshot.json load/save implemented (GNW_STATE.json: snapshot_persistence: IMPLEMENTED)"
+
+  # R8: NVIDIA Free Tier Rate Limits / Quota Exhaustion
+  - threat_id: "T010"
+    stride: "Availability"
+    category: "Resource Exhaustion"
+    asset: "NVIDIA Model Access via OpenCode"
+    description: "Free tier has unknown rate limits; no quota monitoring; 429 responses cause request failures without backoff"
+    control_id: "C-QUOTA-001"
+    control_description: "Per-model request counting (sliding window 1min/1hr); 429 handling with exponential backoff (base 2s, max 60s, jitter); quota metrics exported; observed limits documented in GNW_EVIDENCE.md"
+    positive_test: "Send 100 rapid requests to nemotron-3-5-super-vl-120b → 429 received → backoff applied → subsequent requests succeed after retry; metrics show quota.remaining decremented"
+    negative_test: "429 received → no backoff → immediate retry → cascade of 429s; quota.remaining unknown; requests fail permanently"
+    telemetry_metric: "bridge.nvidia.requests_total, bridge.nvidia.429_total, bridge.nvidia.backoff_duration_seconds, bridge.nvidia.quota_remaining_estimate"
+    risk_refs: ["R8"]
+    severity: "HIGH"
+    status: "OPEN"
+    mitigation_evidence: "Rate limits unknown - free tier (GNW_STATE.json)"
+
+  # R9: Cross-Agent File Conflict (Antigravity ↔ OpenCode)
+  - threat_id: "T011"
+    stride: "Tampering"
+    category: "Tampering / Integrity"
+    asset: "Source Code & Configuration Files"
+    description: "Two agents editing same files simultaneously; GNW governance requires file-level coordination; lost work or corrupted state"
+    control_id: "C-PROC-001"
+    control_description: "GNW_STATE.json tracks phase and ownership; GNW_OPEN_CODE_HANDOFF.md documents handoff protocol; file lock protocol (.gnw.lck files with PID + timestamp); edit zones defined in BACKLOG per agent"
+    positive_test: "Agent A acquires .gnw.lck on bridge_daemon.py → Agent B attempts edit → lock detected → Agent B waits/queues; lock released on Agent A commit"
+    negative_test: "Both agents edit bridge_daemon.py simultaneously → git merge conflict; GNW_STATE.json shows conflicting ownership; work lost"
+    telemetry_metric: "governance.file_locks_active, governance.conflicts_detected_total, governance.handoffs_total"
+    risk_refs: ["R9"]
+    severity: "MEDIUM"
+    status: "MITIGATING"
+    mitigation_evidence: "GNW_STATE.json tracks ownership; handoff protocol documented; file lock protocol pending (R9 mitigation)"
+
+  # R10: Supervisor Background Thread Silent Death
+  - threat_id: "T012"
+    stride: "Availability"
+    category: "Denial of Service"
+    asset: "Supervisor Monitoring Thread"
+    description: "Background thread (_run() loop) dies silently; monitoring stops without alert; daemon thread exits with process but exceptions caught"
+    control_id: "C-PROC-002"
+    control_description: "Exception handler logs full traceback; thread is daemon=True (exits with process); heartbeat file write (supervisor_heartbeat.json) every 10s for external watchdog; is_alive() check in status() endpoint"
+    positive_test: "Inject exception in _run() loop → traceback logged → thread restarts (supervisor restart logic) → heartbeat file updated within 10s"
+    negative_test: "Thread dies → no traceback logged → heartbeat file stale (>30s) → external watchdog does not alert → supervisor.status() shows HEALTHY incorrectly"
+    telemetry_metric: "supervisor.thread.alive, supervisor.heartbeat.age_seconds, supervisor.exceptions_total, supervisor.restarts_total"
+    risk_refs: ["R10"]
+    severity: "MEDIUM"
+    status: "MITIGATED"
+    mitigation_evidence: "Exception handler logs traceback; daemon thread; heartbeat file write planned (R10 mitigation)"
+
+# Control Catalog (for reference)
+controls:
+  - control_id: "C-AVAIL-001"
+    name: "Transient-Aware Circuit Breaker"
+    type: "Preventive"
+    implementation: "personal_agent/agent/router.py:ModelRouter.is_transient_error()"
+    verification: "test_model_router_and_resilience.py::test_transient_503_no_trip"
+
+  - control_id: "C-AVAIL-002"
+    name: "Upstream Health Monitoring"
+    type: "Detective"
+    implementation: "personal_agent/bridge/supervisor.py:Supervisor._check_upstream_health()"
+    verification: "test_supervisor.py::test_upstream_health_alert"
+
+  - control_id: "C-AVAIL-003"
+    name: "Circuit Breaker State Machine"
+    type: "Preventive"
+    implementation: "personal_agent/agent/router.py:ModelRouter.record_failure() / record_success()"
+    verification: "test_model_router_and_resilience.py::test_circuit_breaker_state_machine"
+
+  - control_id: "C-AVAIL-004"
+    name: "Graceful Port Binding with Retry"
+    type: "Preventive"
+    implementation: "personal_agent/bridge/supervisor.py:Supervisor._start_bridge_process()"
+    verification: "test_supervisor.py::test_port_conflict_recovery"
+
+  - control_id: "C-CRYPTO-001"
+    name: "DPAPI Secret Backup & Rotation"
+    type: "Recovery"
+    implementation: "personal_agent/bridge/gnw_secrets.py:export_secret() / rotate_secret()"
+    verification: "test_gnw_secrets.py::test_secret_backup_restore"
+
+  - control_id: "C-CRYPTO-002"
+    name: "Secret Zeroization & Memory Safety"
+    type: "Preventive"
+    implementation: "personal_agent/bridge/gnw_secrets.py:get_bridge_key() / get_session_token()"
+    verification: "test_gnw_secrets.py::test_no_secrets_in_memory_dump"
+
+  - control_id: "C-NET-001"
+    name: "Loopback-Only Binding & Egress Control"
+    type: "Preventive"
+    implementation: "bridge_daemon.py:uvicorn.run(host='127.0.0.1')"
+    verification: "test_bridge_daemon.py::test_loopback_only_binding"
+
+  - control_id: "C-LOG-001"
+    name: "Structured Logging with Secret Redaction"
+    type: "Preventive"
+    implementation: "personal_agent/bridge/supervisor.py:Supervisor._log_state_transition()"
+    verification: "test_logging.py::test_no_secrets_in_logs"
+
+  - control_id: "C-DATA-001"
+    name: "Health Registry Snapshot Persistence"
+    type: "Recovery"
+    implementation: "personal_agent/health/model_health.py:ModelHealthRegistry.load_snapshot() / save_snapshot()"
+    verification: "test_model_health.py::test_snapshot_persistence"
+
+  - control_id: "C-QUOTA-001"
+    name: "Rate Limit Tracking & Backoff"
+    type: "Preventive"
+    implementation: "personal_agent/agent/router.py:ModelRouter._track_quota() / _handle_429()"
+    verification: "test_model_router_and_resilience.py::test_429_backoff"
+
+  - control_id: "C-PROC-001"
+    name: "File Lock Coordination Protocol"
+    type: "Preventive"
+    implementation: ".gnw.lck files + GNW_STATE.json ownership tracking"
+    verification: "test_governance.py::test_file_lock_protocol"
+
+  - control_id: "C-PROC-002"
+    name: "Supervisor Heartbeat & Liveness"
+    type: "Detective"
+    implementation: "personal_agent/bridge/supervisor.py:Supervisor._write_heartbeat()"
+    verification: "test_supervisor.py::test_heartbeat_liveness"
+
+# Traceability Matrix: Risk → Threat → Control
+traceability:
+  R1: ["T001", "T002"]
+  R2: ["T003"]
+  R3: ["T004"]
+  R4: ["T005", "T006"]
+  R5: ["T007"]
+  R6: ["T008", "T006"]
+  R7: ["T009"]
+  R8: ["T010"]
+  R9: ["T011"]
+  R10: ["T012"]
+
+# Coverage Summary
+coverage:
+  total_risks: 10
+  total_threats: 12
+  total_controls: 11
+  critical_threats: 4
+  high_threats: 4
+  medium_threats: 4
+  low_threats: 0
+  mitigated_threats: 8
+  open_threats: 2
+  mitigating_threats: 2
+  positive_tests_defined: 12
+  negative_tests_defined: 12

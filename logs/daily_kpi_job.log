@@ -1,0 +1,7 @@
+2026-10-27 01:22:03,725 - daily_kpi_job - INFO - ============================================================
+2026-10-27 01:22:03,734 - personal_agent.bridge.supervisor - WARNING - BridgeSupervisor: failed to persist transition: foreign key mismatch - "state_transitions" referencing "execution_states"
+2026-10-27 01:22:03,749 - daily_kpi_job - INFO - Starting daily KPI collection job
+2026-10-27 01:22:03,750 - daily_kpi_job - INFO - Time: 2026-10-26T20:22:03.750228+00:00
+2026-10-27 01:22:03,750 - daily_kpi_job - INFO - ============================================================
+2026-10-27 01:22:03,751 - daily_kpi_job - ERROR - No tenant IDs configured. Set GNW_TENANT_ID or GNW_TENANT_IDS
+2026-10-27 01:22:03,774 - daily_kpi_job - ERROR - No tenants to process. Exiting.

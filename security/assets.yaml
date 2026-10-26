@@ -1,0 +1,337 @@
+# GNW Asset Register — Perplexity Browser API Bridge
+# Derived from: GNW_RISK_REGISTER.md, architecture.mmd, threat_matrix.yaml
+# Schema: asset_id, name, type, classification, owner, trust_boundary, description, dependencies, threats, controls
+# Invariant: append-only, crypto-bound, multi-tenant, fail-closed
+
+assets:
+  # External Entities
+  - asset_id: "A-EXT-001"
+    name: "External User"
+    type: "Actor"
+    classification: "Untrusted"
+    owner: "Antigravity"
+    trust_boundary: "TB_NETWORK (Internet)"
+    description: "Authenticated API consumer invoking /v1/chat/completions via HMAC-SHA256 signed requests"
+    dependencies: []
+    threats: ["T001", "T002", "T007", "T008"]
+    controls: ["C-NET-001", "C-AVAIL-001", "C-AVAIL-002"]
+
+  - asset_id: "A-EXT-002"
+    name: "Perplexity Upstream API"
+    type: "External Service"
+    classification: "Untrusted"
+    owner: "Perplexity (Third Party)"
+    trust_boundary: "TB_NETWORK (Internet)"
+    description: "Upstream inference provider; HTTPS :443 only; returns 503 on all chat/completions (current state)"
+    dependencies: []
+    threats: ["T001", "T002", "T010"]
+    controls: ["C-AVAIL-001", "C-AVAIL-002", "C-QUOTA-001"]
+
+  # Network / Infrastructure
+  - asset_id: "A-NET-001"
+    name: "Loopback Interface (127.0.0.1:8000)"
+    type: "Network Interface"
+    classification: "Internal - Trusted"
+    owner: "OpenCode"
+    trust_boundary: "TB_LOOPBACK"
+    description: "Bridge daemon bind address; explicitly 127.0.0.1 only; no external access"
+    dependencies: ["A-PROC-001"]
+    threats: ["T007"]
+    controls: ["C-NET-001"]
+
+  - asset_id: "A-NET-002"
+    name: "HTTPS Egress to Perplexity (:443)"
+    type: "Network Flow"
+    classification: "Internal - Trusted"
+    owner: "OpenCode"
+    trust_boundary: "TB_NETWORK (Internet)"
+    description: "Outbound TLS 1.2+ to api.perplexity.ai; certificate validation enforced; no private IP egress"
+    dependencies: ["A-PROC-001"]
+    threats: ["T001", "T002", "T007"]
+    controls: ["C-NET-001", "C-AVAIL-001"]
+
+  # Processes
+  - asset_id: "A-PROC-001"
+    name: "Bridge Daemon (FastAPI/Uvicorn)"
+    type: "Process"
+    classification: "Internal - Trusted"
+    owner: "OpenCode"
+    trust_boundary: "TB_LOOPBACK"
+    description: "Core request processing: auth validation → routing → upstream forward → response aggregation; PID tracked by supervisor"
+    dependencies: ["A-NET-001", "A-STORE-001", "A-PROC-002", "A-PROC-003"]
+    threats: ["T001", "T002", "T003", "T004", "T005", "T006", "T007", "T008", "T009"]
+    controls: ["C-AVAIL-001", "C-AVAIL-003", "C-AVAIL-004", "C-CRYPTO-001", "C-CRYPTO-002", "C-NET-001", "C-LOG-001", "C-DATA-001"]
+
+  - asset_id: "A-PROC-002"
+    name: "BridgeAuthGate (HMAC Verification)"
+    type: "Process Component"
+    classification: "Internal - Trusted"
+    owner: "OpenCode"
+    trust_boundary: "TB_LOOPBACK"
+    description: "Validates X-GNW-Signature header (HMAC-SHA256) on all /v1/* paths; rejects unauthorized requests with 401"
+    dependencies: ["A-STORE-001"]
+    threats: ["T007", "T008"]
+    controls: ["C-NET-001", "C-LOG-001"]
+
+  - asset_id: "A-PROC-003"
+    name: "ModelRouter (Circuit Breaker + Routing)"
+    type: "Process Component"
+    classification: "Internal - Trusted"
+    owner: "OpenCode"
+    trust_boundary: "TB_LOOPBACK"
+    description: "Health-aware model selection; transient-aware circuit breaker (503/429/timeout); fallback routing; quota tracking"
+    dependencies: ["A-DATA-001", "A-STORE-001"]
+    threats: ["T002", "T003", "T008", "T009", "T010"]
+    controls: ["C-AVAIL-001", "C-AVAIL-003", "C-LOG-001", "C-DATA-001", "C-QUOTA-001"]
+
+  - asset_id: "A-PROC-004"
+    name: "Supervisor (Process Lifecycle Manager)"
+    type: "Process"
+    classification: "Internal - Trusted"
+    owner: "OpenCode"
+    trust_boundary: "TB_SUPERVISOR"
+    description: "Manages bridge daemon lifecycle: start/stop/restart; health monitoring; state machine (HEALTHY/DEGRADED/FAILED); auto-recovery"
+    dependencies: ["A-PROC-001", "A-STORE-001", "A-DATA-002"]
+    threats: ["T004", "T005", "T012"]
+    controls: ["C-AVAIL-004", "C-CRYPTO-001", "C-PROC-002"]
+
+  # Data Stores
+  - asset_id: "A-STORE-001"
+    name: "DPAPI Secret Store (Windows)"
+    type: "Data Store"
+    classification: "Restricted - Secrets"
+    owner: "Antigravity"
+    trust_boundary: "TB_DPAPI"
+    description: "Windows DPAPI-protected storage for bridge_key and session_token; per-user profile encryption; backup via export_secret()"
+    dependencies: []
+    threats: ["T005", "T006"]
+    controls: ["C-CRYPTO-001", "C-CRYPTO-002"]
+
+  - asset_id: "A-DATA-001"
+    name: "ModelHealthRegistry (In-Memory + Snapshot)"
+    type: "Data Store"
+    classification: "Internal - Operational"
+    owner: "OpenCode"
+    trust_boundary: "TB_LOOPBACK"
+    description: "Model probe results, health state (healthy/unverified/quarantined/unavailable); persisted to health_snapshot.json (atomic write+rename); loaded on startup"
+    dependencies: ["A-PROC-003"]
+    threats: ["T009"]
+    controls: ["C-DATA-001"]
+
+  - asset_id: "A-DATA-002"
+    name: "Supervisor State & Heartbeat"
+    type: "Data Store"
+    classification: "Internal - Operational"
+    owner: "OpenCode"
+    trust_boundary: "TB_SUPERVISOR"
+    description: "Supervisor state machine state, failure counts, restart history; heartbeat file (supervisor_heartbeat.json) for external watchdog"
+    dependencies: ["A-PROC-004"]
+    threats: ["T012"]
+    controls: ["C-PROC-002"]
+
+  - asset_id: "A-DATA-003"
+    name: "Health Snapshot File (health_snapshot.json)"
+    type: "Data Store (File)"
+    classification: "Internal - Operational"
+    owner: "OpenCode"
+    trust_boundary: "TB_LOOPBACK (Filesystem)"
+    description: "Serialized ModelHealthRegistry state; atomic write via .tmp + rename; versioned schema; no secrets"
+    dependencies: ["A-DATA-001"]
+    threats: ["T009"]
+    controls: ["C-DATA-001"]
+
+  - asset_id: "A-DATA-004"
+    name: "GNW_STATE.json (Governance State)"
+    type: "Data Store (File)"
+    classification: "Internal - Governance"
+    owner: "Both Agents"
+    trust_boundary: "TB_LOOPBACK (Filesystem)"
+    description: "Single source of truth for phase, ownership, bridge/supervisor/model health status; append-only updates; cryptographic hash binding"
+    dependencies: []
+    threats: ["T011"]
+    controls: ["C-PROC-001"]
+
+  - asset_id: "A-DATA-005"
+    name: "File Lock Files (.gnw.lck)"
+    type: "Data Store (File)"
+    classification: "Internal - Governance"
+    owner: "Both Agents"
+    trust_boundary: "TB_LOOPBACK (Filesystem)"
+    description: "Advisory locks for cross-agent coordination; contains PID, timestamp, asset_id; TTL-based expiry"
+    dependencies: []
+    threats: ["T011"]
+    controls: ["C-PROC-001"]
+
+  # Cryptographic Assets
+  - asset_id: "A-CRYPTO-001"
+    name: "Bridge Key (HMAC-SHA256 Signing Key)"
+    type: "Cryptographic Key"
+    classification: "Restricted - Secret"
+    owner: "Antigravity"
+    trust_boundary: "TB_DPAPI"
+    description: "256-bit key for HMAC-SHA256 request signing; stored in DPAPI; rotated quarterly; never logged"
+    dependencies: ["A-STORE-001"]
+    threats: ["T005", "T006"]
+    controls: ["C-CRYPTO-001", "C-CRYPTO-002", "C-LOG-001"]
+
+  - asset_id: "A-CRYPTO-002"
+    name: "Session Token (Perplexity Auth)"
+    type: "Authentication Token"
+    classification: "Restricted - Secret"
+    owner: "Antigravity"
+    trust_boundary: "TB_DPAPI"
+    description: "Perplexity session cookie/token for upstream auth; stored in DPAPI; expires per Perplexity policy; never logged"
+    dependencies: ["A-STORE-001"]
+    threats: ["T005", "T006"]
+    controls: ["C-CRYPTO-001", "C-CRYPTO-002", "C-LOG-001"]
+
+  # Governance / Process Assets
+  - asset_id: "A-GOV-001"
+    name: "GNW Governance Documents"
+    type: "Documentation"
+    classification: "Internal - Governance"
+    owner: "Both Agents"
+    trust_boundary: "TB_LOOPBACK (Filesystem)"
+    description: "MISSION, BACKLOG, STATE, RISK_REGISTER, EVIDENCE, HANDOFF; append-only; hash-bound"
+    dependencies: []
+    threats: ["T011"]
+    controls: ["C-PROC-001"]
+
+  - asset_id: "A-GOV-002"
+    name: "OpenCode Agent Definitions (.opencode/agents/)"
+    type: "Configuration"
+    classification: "Internal - Operational"
+    owner: "OpenCode"
+    trust_boundary: "TB_LOOPBACK (Filesystem)"
+    description: "Agent configs: researcher, architect, tester, security; define permissions, tools, prompts"
+    dependencies: []
+    threats: ["T011"]
+    controls: ["C-PROC-001"]
+
+# Asset Classification Summary
+classification_summary:
+  Restricted - Secrets: 3
+  Internal - Trusted: 5
+  Internal - Operational: 5
+  Internal - Governance: 3
+  Untrusted: 2
+  External Service: 1
+
+# Trust Boundary Asset Mapping
+trust_boundary_assets:
+  TB_NETWORK: ["A-EXT-001", "A-EXT-002", "A-NET-002"]
+  TB_LOOPBACK: ["A-NET-001", "A-PROC-001", "A-PROC-002", "A-PROC-003", "A-DATA-001", "A-DATA-003", "A-DATA-004", "A-DATA-005", "A-GOV-001", "A-GOV-002"]
+  TB_DPAPI: ["A-STORE-001", "A-CRYPTO-001", "A-CRYPTO-002"]
+  TB_SUPERVISOR: ["A-PROC-004", "A-DATA-002"]
+
+# Criticality Rating (CIA Impact)
+criticality:
+  A-CRYPTO-001: "CRITICAL"  # Compromise = full bridge impersonation
+  A-CRYPTO-002: "CRITICAL"  # Compromise = upstream access
+  A-STORE-001: "CRITICAL"   # Loss = bridge cannot start
+  A-PROC-001: "HIGH"        # DoS = all inference down
+  A-PROC-003: "HIGH"        # DoS = routing failures
+  A-PROC-004: "HIGH"        # DoS = no auto-recovery
+  A-DATA-001: "MEDIUM"      # Loss = re-probe needed
+  A-DATA-004: "MEDIUM"      # Loss = governance drift
+  A-NET-001: "MEDIUM"       # Misconfig = SSRF risk
+  A-NET-002: "MEDIUM"       # Misconfig = egress violation
+  A-PROC-002: "MEDIUM"      # Bypass = auth bypass
+  A-DATA-002: "LOW"         # Loss = monitoring gap
+  A-DATA-003: "LOW"         # Loss = re-probe needed
+  A-DATA-005: "LOW"         # Loss = coordination gap
+  A-GOV-001: "LOW"          # Loss = audit gap
+  A-GOV-002: "LOW"          # Loss = agent config gap
+  A-EXT-001: "N/A"          # External
+  A-EXT-002: "N/A"          # External
+
+# Data Flow Mapping (from architecture.mmd)
+data_flows:
+  - from: "A-EXT-001"
+    to: "A-PROC-001"
+    via: "A-NET-001"
+    protocol: "HTTPS POST /v1/chat/completions"
+    auth: "HMAC-SHA256 (A-CRYPTO-001)"
+    classification: "Confidential"
+  
+  - from: "A-PROC-001"
+    to: "A-PROC-002"
+    protocol: "Internal function call"
+    auth: "N/A (same process)"
+    classification: "Internal"
+  
+  - from: "A-PROC-002"
+    to: "A-PROC-001"
+    protocol: "Internal function call"
+    auth: "N/A"
+    classification: "Internal"
+  
+  - from: "A-PROC-001"
+    to: "A-PROC-003"
+    protocol: "Internal function call"
+    auth: "N/A"
+    classification: "Internal"
+  
+  - from: "A-PROC-003"
+    to: "A-DATA-001"
+    protocol: "Internal function call"
+    auth: "N/A"
+    classification: "Internal"
+  
+  - from: "A-PROC-003"
+    to: "A-PROC-001"
+    protocol: "Internal function call"
+    auth: "N/A"
+    classification: "Internal"
+  
+  - from: "A-PROC-001"
+    to: "A-EXT-002"
+    via: "A-NET-002"
+    protocol: "HTTPS POST /chat/completions"
+    auth: "Session Token (A-CRYPTO-002)"
+    classification: "Confidential"
+  
+  - from: "A-PROC-004"
+    to: "A-PROC-001"
+    protocol: "Process signals (SIGTERM/SIGKILL) + HTTP health check"
+    auth: "N/A (local)"
+    classification: "Internal"
+  
+  - from: "A-PROC-001"
+    to: "A-PROC-004"
+    protocol: "HTTP GET /health"
+    auth: "N/A (local)"
+    classification: "Internal"
+  
+  - from: "A-PROC-003"
+    to: "A-DATA-001"
+    protocol: "Active probes (background)"
+    auth: "N/A"
+    classification: "Internal"
+  
+  - from: "A-PROC-001"
+    to: "A-STORE-001"
+    protocol: "DPAPI CryptUnprotectData"
+    auth: "Windows User Context"
+    classification: "Restricted"
+  
+  - from: "A-PROC-003"
+    to: "A-STORE-001"
+    protocol: "DPAPI CryptUnprotectData"
+    auth: "Windows User Context"
+    classification: "Restricted"
+  
+  - from: "A-PROC-004"
+    to: "A-STORE-001"
+    protocol: "DPAPI CryptUnprotectData"
+    auth: "Windows User Context"
+    classification: "Restricted"
+
+# Compliance Tags
+compliance_tags:
+  - "GNW-Invariant-1: Append-only immutability"
+  - "GNW-Invariant-2: Cryptographic hash binding"
+  - "GNW-Invariant-3: Multi-tenant isolation"
+  - "GNW-Invariant-4: Fail-closed behavior"
+  - "GNW-Invariant-5: Egress SSRF protection (HTTPS only, no private IPs)"
+  - "GNW-Invariant-6: Token and byte budget ceilings"

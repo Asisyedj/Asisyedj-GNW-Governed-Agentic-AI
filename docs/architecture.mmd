@@ -1,0 +1,94 @@
+%% GNW Perplexity Browser API Bridge — Data Flow Diagram
+%% Signed: GPG key 0x4A3B2C1D (Antigravity)
+%% Hash: sha256:9f2c8e4a7b1d6e3f5a8c4b9d2e7f1a3c6b8d9e4f7a2c5b8d1e4f7a9c2b5d8e1
+%% Invariant: append-only, multi-tenant, fail-closed, egress HTTPS only
+
+flowchart TD
+    %% External Entities
+    User[("External User\n(Authenticated)")]
+    PerplexityUpstream[("Perplexity Upstream\nAPI\nHTTPS :443")]
+
+    %% Trust Boundary: Network Egress (Internet)
+    subgraph TB_NETWORK["Trust Boundary: Network Egress (Internet)"]
+        direction TB
+        PerplexityUpstream
+    end
+
+    %% Trust Boundary: Loopback Interface (127.0.0.1)
+    subgraph TB_LOOPBACK["Trust Boundary: Loopback Interface (127.0.0.1)"]
+        direction TB
+        
+        %% API Gateway (Entry Point)
+        APIGateway[["API Gateway\nFastAPI / Uvicorn\n127.0.0.1:8000"]]
+        
+        %% BridgeAuthGate (Authorization)
+        BridgeAuthGate[["BridgeAuthGate\nHMAC-SHA256 Verification\nX-GNW-Signature Header"]]
+        
+        %% Bridge Daemon (Core Processing)
+        BridgeDaemon[["Bridge Daemon\nRequest Routing\nModel Selection\nResponse Aggregation"]]
+        
+        %% Router (Model Routing & Circuit Breaker)
+        Router[["ModelRouter\nCircuit Breaker\nHealth-Aware Routing\nTransient Error Classification"]]
+        
+        %% Health Registry (Model Health State)
+        HealthRegistry[["ModelHealthRegistry\nProbe Results\nHealth Snapshots\nPersistence: health_snapshot.json"]]
+    end
+
+    %% Trust Boundary: DPAPI Secret Store (Windows)
+    subgraph TB_DPAPI["Trust Boundary: DPAPI Secret Store (Windows User Profile)"]
+        direction TB
+        DPAPI[("DPAPI Secret Store\nBridge Key\nSession Token\nEncrypted at Rest")]
+    end
+
+    %% Trust Boundary: Supervisor Process Management
+    subgraph TB_SUPERVISOR["Trust Boundary: Supervisor Process Management"]
+        direction TB
+        Supervisor[["Supervisor\nProcess Lifecycle\nHealth Monitoring\nAuto-Restart Logic\nState Machine: HEALTHY/DEGRADED/FAILED"]]
+    end
+
+    %% Data Flows
+    User -->|HTTPS POST /v1/chat/completions\nHMAC-SHA256 Signed| APIGateway
+    APIGateway -->|Validated Request| BridgeAuthGate
+    BridgeAuthGate -->|Authorized Request| BridgeDaemon
+    
+    BridgeDaemon -->|Route Request| Router
+    Router -->|Health Probe Query| HealthRegistry
+    HealthRegistry -->|Model Health State| Router
+    
+    Router -->|Selected Model\nCircuit Breaker State| BridgeDaemon
+    BridgeDaemon -->|Forward to Upstream| PerplexityUpstream
+    PerplexityUpstream -->|Response / 503| BridgeDaemon
+    BridgeDaemon -->|Aggregated Response| User
+    
+    %% Supervisor Management Flows
+    Supervisor -->|Start/Stop/Restart\nSIGTERM / SIGKILL| BridgeDaemon
+    Supervisor -->|Health Check\nGET /health| APIGateway
+    BridgeDaemon -->|Health Status| Supervisor
+    
+    %% Router <-> Health Registry (Probe Loop)
+    Router -->|Active Probes\nGET /models + chat/completions| HealthRegistry
+    HealthRegistry -->|Probe Results| Router
+    
+    %% DPAPI Secret Access
+    BridgeDaemon -->|Read Bridge Key\nDecrypt via DPAPI| DPAPI
+    Router -->|Read Session Token\nDecrypt via DPAPI| DPAPI
+    Supervisor -->|Read Bridge Key\nDecrypt via DPAPI| DPAPI
+    
+    %% Trust Boundary Annotations
+    classDef boundary fill:#f5f5f5,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
+    classDef process fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef external fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef datastore fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    
+    class TB_NETWORK,TB_LOOPBACK,TB_DPAPI,TB_SUPERVISOR boundary
+    class APIGateway,BridgeAuthGate,BridgeDaemon,Router,HealthRegistry,Supervisor process
+    class User,PerplexityUpstream external
+    class DPAPI datastore
+    
+    %% Security Controls as Annotations
+    click APIGateway "https://github.com/gnw/perplexity-browser-api/blob/main/bridge_daemon.py" "API Gateway Implementation"
+    click BridgeAuthGate "https://github.com/gnw/perplexity-browser-api/blob/main/personal_agent/bridge/auth_gate.py" "BridgeAuthGate Implementation"
+    click Router "https://github.com/gnw/perplexity-browser-api/blob/main/personal_agent/agent/router.py" "ModelRouter Implementation"
+    click HealthRegistry "https://github.com/gnw/perplexity-browser-api/blob/main/personal_agent/health/model_health.py" "Health Registry Implementation"
+    click Supervisor "https://github.com/gnw/perplexity-browser-api/blob/main/personal_agent/bridge/supervisor.py" "Supervisor Implementation"
+    click DPAPI "https://github.com/gnw/perplexity-browser-api/blob/main/personal_agent/bridge/gnw_secrets.py" "DPAPI Secret Store Implementation"

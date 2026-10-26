@@ -4,5 +4,9 @@ ruff>=0.6
 opentelemetry-api
 opentelemetry-sdk
 opentelemetry-exporter-otlp
-
+psycopg[pool]>=3.1,<4
+psycopg-binary>=3.1,<4
+fastapi>=0.110,<1
+uvicorn>=0.29,<1
+pydantic>=2.7,<3
 httpx

@@ -1,0 +1,159 @@
+name: GNW CI/CD Fail-Closed
+on: [push, pull_request]
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -e .[dev]
+      - name: Typecheck (mypy)
+        run: mypy personal_agent/
+      - name: Lint (ruff)
+        run: ruff check personal_agent/
+      - name: Secret scan (git-secrets)
+        run: git-secrets --scan
+
+  unit-tests:
+    needs: static-checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -e .[dev]
+      - name: Run unit tests
+        run: pytest personal_agent/tests/ -v --junitxml=evidence/unit_tests.xml
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-evidence
+          path: evidence/unit_tests.xml
+
+  integration-tests:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -e .[dev]
+      - name: Run migrations
+        run: python -m personal_agent.db.migrate
+      - name: Run integration tests
+        run: pytest personal_agent/tests/ -v -k "not unit" --junitxml=evidence/integration_tests.xml
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-evidence
+          path: evidence/integration_tests.xml
+
+  security-scans:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -e .[dev] && pip install bandit semgrep pip-audit
+      - name: Bandit security scan
+        run: bandit -r personal_agent/ -f json -o evidence/bandit.json
+      - name: Semgrep scan
+        run: semgrep --config=auto --json=evidence/semgrep.json personal_agent/
+      - name: Dependency scan
+        run: pip-audit --format=json --output=evidence/pip_audit.json
+
+  evidence-verification:
+    needs: [unit-tests, integration-tests, security-scans]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all evidence
+        uses: actions/download-artifact@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -e .[dev]
+      - name: Verify evidence completeness
+        run: python scripts/verify_evidence.py --require-all
+      - name: Verify test coverage
+        run: python scripts/verify_coverage.py --min 80
+
+  staging-drill:
+    needs: evidence-verification
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -e .[dev]
+      - name: Deploy to staging
+        run: ./scripts/deploy_staging.sh
+      - name: Run smoke tests
+        run: pytest personal_agent/tests/ -v -k smoke --junitxml=evidence/staging_smoke.xml
+      - name: Collect staging evidence
+        run: python scripts/collect_staging_evidence.py
+
+  release-approval:
+    needs: staging-drill
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Wait for manual approval
+        uses: trstringer/manual-approval@v1
+        with:
+          approvers: security-owner, release-approver
+      - name: Record approval artifact
+        run: python scripts/record_approval.py --release ${{ github.sha }}
+
+  production-deploy:
+    needs: release-approval
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -e .[dev]
+      - name: Canary deploy
+        run: ./scripts/deploy_canary.sh
+      - name: Monitor KPIs
+        run: python scripts/monitor_kpis.py --duration 300
+      - name: Rollback on breach
+        run: python scripts/auto_rollback.py
