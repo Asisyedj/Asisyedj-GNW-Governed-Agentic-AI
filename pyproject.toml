@@ -13,7 +13,7 @@ dependencies = [
 [tool.pytest.ini_options]
 testpaths = ["personal_agent/tests"]
 python_files = ["test_*.py"]
-addopts = "-q"
+addopts = "-q --tb=short"
 
 [project.scripts]
 perplexity-browser-api = "perplexity_browser_api:main"

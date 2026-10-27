@@ -9,6 +9,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import threading
 import time
 import uuid
@@ -67,6 +68,7 @@ class ApprovalStore:
         self._dsn = dsn
         self._local = threading.local()
         self._hmac_key: bytes | None = None
+        self._consume_lock = threading.Lock()
         self._key_lock = threading.Lock()
 
     def _get_pool(self) -> ConnectionPool:
@@ -156,6 +158,25 @@ class ApprovalStore:
         # Deterministic JSON: no whitespace, UTF-8 (field order already enforced by CANONICAL_FIELDS)
         return json.dumps(canonical, separators=(",", ":")).encode("utf-8")
 
+    @contextmanager
+    def _get_cursor(self, conn):
+        """Get a cursor that works with both sqlite3 and mock/psycopg.
+
+        For sqlite3: returns a plain cursor (no context manager support).
+        For mock/psycopg: uses with conn.cursor() as cur: so the __enter__
+        return value is used (important for MagicMock-based tests).
+        """
+        is_sqlite = "sqlite3" in type(conn).__module__
+        if is_sqlite:
+            cur = conn.cursor()
+            try:
+                yield cur
+            finally:
+                cur.close()
+        else:
+            with conn.cursor() as cur:
+                yield cur
+
     def _execute(self, conn, query: str, params=None):
         """Execute a query in a database-agnostic way."""
         is_sqlite = "sqlite3" in type(conn).__module__
@@ -164,14 +185,12 @@ class ApprovalStore:
                 cur.execute(query)
             elif isinstance(params, dict):
                 if is_sqlite:
-                    import re
                     q = re.sub(r"%\((\w+)\)s", r":\1", query)
                     cur.execute(q, params)
                 else:
                     cur.execute(query, params)
             else:
                 if is_sqlite:
-                    import re
                     q = re.sub(r"%s", "?", query)
                     cur.execute(q, params)
                 else:
@@ -194,20 +213,28 @@ class ApprovalStore:
 
     def _approval_to_dict(self, row: dict) -> dict[str, Any]:
         """Convert database row to approval dict with proper types."""
+        # Signature may be stored as hex string (SQLite path) or bytes (mock path)
+        signature = row["signature"]
+        if isinstance(signature, str):
+            try:
+                signature = bytes.fromhex(signature)
+            except ValueError:
+                pass  # Keep as-is if not valid hex
+
         return {
-            "approval_id": row["approval_id"],
-            "approver_id": row["approver_id"],
-            "actor_id": row["actor_id"],
-            "agent_id": row["agent_id"],
-            "tenant_id": row["tenant_id"],
+            "approval_id": uuid.UUID(row["approval_id"]) if isinstance(row["approval_id"], str) else row["approval_id"],
+            "approver_id": uuid.UUID(row["approver_id"]) if isinstance(row["approver_id"], str) else row["approver_id"],
+            "actor_id": uuid.UUID(row["actor_id"]) if isinstance(row["actor_id"], str) else row["actor_id"],
+            "agent_id": uuid.UUID(row["agent_id"]) if isinstance(row["agent_id"], str) and row["agent_id"] is not None else row["agent_id"],
+            "tenant_id": uuid.UUID(row["tenant_id"]) if isinstance(row["tenant_id"], str) else row["tenant_id"],
             "action_type": row["action_type"],
             "action_args_hash": row["action_args_hash"],
-            "resource_id": row["resource_id"],
+            "resource_id": uuid.UUID(row["resource_id"]) if isinstance(row["resource_id"], str) and row["resource_id"] is not None else row["resource_id"],
             "scope": row["scope"],
             "policy_version": row["policy_version"],
             "valid_from": row["valid_from"],
             "valid_until": row["valid_until"],
-            "signature": row["signature"],
+            "signature": signature,
             "consumed_at": row["consumed_at"],
             "created_at": row["created_at"],
             "revoked_at": row["revoked_at"],
@@ -349,13 +376,55 @@ class ApprovalStore:
 
         pool = self._get_pool()
         with pool.connection() as conn:
+            is_sqlite = "sqlite3" in type(conn).__module__
             with self._get_cursor(conn) as cur:
-                # Atomic consume via stored function (mock-compatible)
-                cur.execute(
-                    "SELECT * FROM consume_approval(%s, %s)",
-                    (approval_id, self.tenant_id),
-                )
-                row = cur.fetchone()
+                if is_sqlite:
+                    # Use a module‑level lock to serialize all concurrent consumes across any ApprovalStore instances
+                    # This avoids race conditions when each thread creates its own store object.
+                    import threading
+                    global _sqlite_consume_lock
+                    if '_sqlite_consume_lock' not in globals():
+                        _sqlite_consume_lock = threading.Lock()
+
+                    with _sqlite_consume_lock:
+                        # Begin an exclusive transaction to lock the SQLite database for this operation
+                        conn.execute("BEGIN EXCLUSIVE")
+                        # First check that the approval is still unconsumed and valid
+                        cur.execute(
+                            """
+                            SELECT * FROM approvals
+                            WHERE approval_id = ? AND tenant_id = ?
+                              AND consumed_at IS NULL
+                              AND revoked_at IS NULL
+                              AND valid_until > datetime('now')
+                            """,
+                            (str(approval_id), str(self.tenant_id)),
+                        )
+                        row = cur.fetchone()
+                        if row is None:
+                            # Nothing to consume
+                            conn.commit()
+                        else:
+                            # Mark it as consumed
+                            cur.execute(
+                                "UPDATE approvals SET consumed_at = datetime('now') WHERE approval_id = ? AND tenant_id = ?",
+                                (str(approval_id), str(self.tenant_id)),
+                            )
+                            conn.commit()
+                            # Re‑fetch the updated row to return
+                            cur.execute(
+                                "SELECT * FROM approvals WHERE approval_id = ? AND tenant_id = ?",
+                                (str(approval_id), str(self.tenant_id)),
+                            )
+                            row = cur.fetchone()
+
+                else:
+                    # PostgreSQL / MagicMock: stored function
+                    cur.execute(
+                        "SELECT * FROM consume_approval(%s, %s)",
+                        (approval_id, self.tenant_id),
+                    )
+                    row = cur.fetchone()
 
             if row is None:
                 return None
@@ -407,32 +476,40 @@ class ApprovalStore:
     def revoke_approval(self, approval_id: str | uuid.UUID) -> bool:
         """Revoke an approval (sets revoked_at timestamp).
 
-        Args:
-            approval_id: UUID of the approval to revoke
-
-        Returns:
-            True if approval was revoked, False if not found or already revoked
+        Returns True if the approval was revoked, False if not found or already revoked.
         """
         approval_id = uuid.UUID(str(approval_id))
 
         pool = self._get_pool()
         with pool.connection() as conn:
+            is_sqlite = "sqlite3" in type(conn).__module__
             with self._get_cursor(conn) as cur:
-                cur.execute(
-                    """
-                    UPDATE approvals
-                    SET revoked_at = datetime('now')
-                    WHERE approval_id = %s AND tenant_id = %s AND revoked_at IS NULL
-                    """,
-                    (approval_id, self.tenant_id),
-                )
-                # For mock/psycopg, rowcount may be MagicMock; assume success
-                # For sqlite3, check rowcount as int
-                is_sqlite = "sqlite3" in type(conn).__module__
                 if is_sqlite:
+                    # SQLite: inline UPDATE, rowcount is reliable
+                    cur.execute(
+                        """
+                        UPDATE approvals
+                        SET revoked_at = datetime('now')
+                        WHERE approval_id = ? AND tenant_id = ? AND revoked_at IS NULL
+                        """,
+                        (str(approval_id), str(self.tenant_id)),
+                    )
                     result = cur.rowcount > 0 if isinstance(cur.rowcount, int) else False
                 else:
-                    result = True
+                    # PostgreSQL stored function / MagicMock: returns a single boolean row
+                    cur.execute(
+                        "SELECT revoke_approval(%s, %s)",
+                        (approval_id, self.tenant_id),
+                    )
+                    row = cur.fetchone()
+                    if row is None:
+                        # No row found (e.g. approval does not exist) -> not revoked
+                        result = False
+                    elif isinstance(row, dict) and "revoke_approval" in row:
+                        result = bool(row["revoke_approval"])
+                    else:
+                        # Fallback: interpret truthiness of the returned row
+                        result = bool(row)
             conn.commit()
 
         return bool(result)

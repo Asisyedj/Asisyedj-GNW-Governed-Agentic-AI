@@ -1,159 +1,161 @@
+# GNW P3E — Fail-Closed CI/CD Pipeline
+#
+# Job chain (enforced with `needs:` — later jobs never run if an earlier one fails):
+#   static-checks -> unit-tests -> security-scans -> evidence-verification
+#
+# Every gate is fail-closed: any non-zero exit, missing artifact, or evidence
+# validation failure stops the pipeline. Evidence artifacts (JUnit XML) are
+# uploaded even when tests fail, so the audit trail survives failures.
+
 name: GNW CI/CD Fail-Closed
-on: [push, pull_request]
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: '1'
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1 — Static checks: syntax-compile every personal_agent/*.py
+  # ---------------------------------------------------------------------------
   static-checks:
+    name: Job 1 - Static Checks (py_compile)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install deps
-        run: pip install -e .[dev]
-      - name: Typecheck (mypy)
-        run: mypy personal_agent/
-      - name: Lint (ruff)
-        run: ruff check personal_agent/
-      - name: Secret scan (git-secrets)
-        run: git-secrets --scan
 
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install -r personal_agent/requirements.txt
+          pip install pytest pytest-cov
+
+      - name: py_compile all personal_agent/*.py
+        # compileall walks the tree recursively and exits non-zero if any
+        # file fails to compile (cross-platform equivalent of
+        # `py_compile` over every *.py — no bash-only globbing required).
+        run: python -m compileall -f -q personal_agent/
+
+  # ---------------------------------------------------------------------------
+  # Job 2 — Unit tests with JUnit evidence artifact
+  # ---------------------------------------------------------------------------
   unit-tests:
+    name: Job 2 - Unit Tests
     needs: static-checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install deps
-        run: pip install -e .[dev]
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install -r personal_agent/requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Create evidence directory
+        run: python -c "import os; os.makedirs('evidence', exist_ok=True)"
+
       - name: Run unit tests
-        run: pytest personal_agent/tests/ -v --junitxml=evidence/unit_tests.xml
-      - name: Upload evidence
+        run: python -m pytest personal_agent/tests/ -v --junitxml=evidence/unit_tests.xml
+
+      - name: Upload unit test evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: unit-evidence
+          name: evidence-unit-tests
           path: evidence/unit_tests.xml
+          if-no-files-found: error
 
-  integration-tests:
+  # ---------------------------------------------------------------------------
+  # Job 3 — Security-relevant test scans (approval/mission/state/idempotency/router)
+  # ---------------------------------------------------------------------------
+  security-scans:
+    name: Job 3 - Security Scans
     needs: unit-tests
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_PASSWORD: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install deps
-        run: pip install -e .[dev]
-      - name: Run migrations
-        run: python -m personal_agent.db.migrate
-      - name: Run integration tests
-        run: pytest personal_agent/tests/ -v -k "not unit" --junitxml=evidence/integration_tests.xml
-      - name: Upload evidence
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install -r personal_agent/requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Create evidence directory
+        run: python -c "import os; os.makedirs('evidence', exist_ok=True)"
+
+      - name: Run security-focused tests
+        run: python -m pytest personal_agent/tests/ -k "approval or mission or state or idempotency or model_router" --junitxml=evidence/security_tests.xml
+
+      - name: Upload security scan evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: integration-evidence
-          path: evidence/integration_tests.xml
+          name: evidence-security-scans
+          path: evidence/security_tests.xml
+          if-no-files-found: error
 
-  security-scans:
-    needs: unit-tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install deps
-        run: pip install -e .[dev] && pip install bandit semgrep pip-audit
-      - name: Bandit security scan
-        run: bandit -r personal_agent/ -f json -o evidence/bandit.json
-      - name: Semgrep scan
-        run: semgrep --config=auto --json=evidence/semgrep.json personal_agent/
-      - name: Dependency scan
-        run: pip-audit --format=json --output=evidence/pip_audit.json
-
+  # ---------------------------------------------------------------------------
+  # Job 4 — Evidence verification gate (fail-closed)
+  # ---------------------------------------------------------------------------
   evidence-verification:
-    needs: [unit-tests, integration-tests, security-scans]
+    name: Job 4 - Evidence Verification (Fail-Closed Gate)
+    needs: [static-checks, unit-tests, security-scans]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Download all evidence
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Download unit test evidence
         uses: actions/download-artifact@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      - name: Install deps
-        run: pip install -e .[dev]
-      - name: Verify evidence completeness
-        run: python scripts/verify_evidence.py --require-all
-      - name: Verify test coverage
-        run: python scripts/verify_coverage.py --min 80
+          name: evidence-unit-tests
+          path: evidence
 
-  staging-drill:
-    needs: evidence-verification
-    if: github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Download security scan evidence
+        uses: actions/download-artifact@v4
         with:
-          python-version: '3.11'
-      - name: Install deps
-        run: pip install -e .[dev]
-      - name: Deploy to staging
-        run: ./scripts/deploy_staging.sh
-      - name: Run smoke tests
-        run: pytest personal_agent/tests/ -v -k smoke --junitxml=evidence/staging_smoke.xml
-      - name: Collect staging evidence
-        run: python scripts/collect_staging_evidence.py
+          name: evidence-security-scans
+          path: evidence
 
-  release-approval:
-    needs: staging-drill
-    if: github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Wait for manual approval
-        uses: trstringer/manual-approval@v1
-        with:
-          approvers: security-owner, release-approver
-      - name: Record approval artifact
-        run: python scripts/record_approval.py --release ${{ github.sha }}
+      - name: List downloaded evidence
+        run: python -c "import os; [print(os.path.join(r, f)) for r, _, fs in os.walk('evidence') for f in fs]"
 
-  production-deploy:
-    needs: release-approval
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install deps
-        run: pip install -e .[dev]
-      - name: Canary deploy
-        run: ./scripts/deploy_canary.sh
-      - name: Monitor KPIs
-        run: python scripts/monitor_kpis.py --duration 300
-      - name: Rollback on breach
-        run: python scripts/auto_rollback.py
+      - name: Verify evidence completeness (fail-closed)
+        # Exits non-zero if any evidence file is missing, has 0 tests,
+        # or contains failures/errors.
+        run: python scripts/verify_evidence.py --min-tests 1

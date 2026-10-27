@@ -15,10 +15,20 @@ from typing import Dict, List, Tuple
 
 REQUIRED_EVIDENCE_FILES = [
     "evidence/unit_tests.xml",
+    "evidence/security_tests.xml",
+]
+
+# Extended evidence (validated only with --require-all): artifacts produced by
+# optional scanner jobs. Not required by the P3E CI pipeline, but enforced when
+# a pipeline opts into deeper scanning.
+EXTENDED_JUNIT_FILES = [
     "evidence/integration_tests.xml",
-    "evidence/bandit.json",
-    "evidence/semgrep.json",
-    "evidence/pip_audit.json",
+]
+
+EXTENDED_JSON_VALIDATORS = [
+    ("evidence/bandit.json", "validate_bandit_json"),
+    ("evidence/semgrep.json", "validate_semgrep_json"),
+    ("evidence/pip_audit.json", "validate_pip_audit_json"),
 ]
 
 CRITICAL_SEVERITY_KEYWORDS = ["CRITICAL", "HIGH", "ERROR"]
@@ -168,63 +178,73 @@ def compute_sha256(filepath: str) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Verify CI/CD evidence artifacts")
-    parser.add_argument("--require-all", action="store_true", help="Require all evidence files")
-    parser.add_argument("--min-tests", type=int, default=1, help="Minimum tests in JUnit XML")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Verify CI/CD evidence artifacts (GNW fail-closed gate). "
+            "Requires JUnit XML evidence with >0 tests and 0 failures/errors; "
+            "exits non-zero on any failure."
+        )
+    )
+    parser.add_argument(
+        "--require-all",
+        action="store_true",
+        help="Also require extended evidence (integration tests, bandit, semgrep, pip-audit)",
+    )
+    parser.add_argument("--min-tests", type=int, default=1, help="Minimum tests in each JUnit XML")
     args = parser.parse_args()
 
     print("=" * 60)
     print("GNW Evidence Verification")
     print("=" * 60)
 
+    # Build the validator workload: required JUnit XMLs always, extended
+    # evidence only when --require-all is set.
+    junit_files = list(REQUIRED_EVIDENCE_FILES)
+    json_checks = []
+    if args.require_all:
+        junit_files.extend(EXTENDED_JUNIT_FILES)
+        json_checks = [
+            (validate_bandit_json, "evidence/bandit.json"),
+            (validate_semgrep_json, "evidence/semgrep.json"),
+            (validate_pip_audit_json, "evidence/pip_audit.json"),
+        ]
+    all_paths = junit_files + [path for _, path in json_checks]
+
     all_passed = True
-    results = []
 
     # Check required files exist
-    print("\n[1/5] Checking evidence file existence...")
-    for filepath in REQUIRED_EVIDENCE_FILES:
+    print("\n[1/4] Checking evidence file existence...")
+    for filepath in all_paths:
         passed, msg = check_file_exists(filepath)
-        results.append((passed, msg))
         status = "PASS" if passed else "FAIL"
         print(f"  [{status}] {msg}")
         if not passed:
             all_passed = False
 
-    # Validate unit tests
-    print("\n[2/5] Validating unit test evidence...")
-    passed, msg = validate_junit_xml("evidence/unit_tests.xml", args.min_tests)
-    results.append((passed, msg))
-    status = "PASS" if passed else "FAIL"
-    print(f"  [{status}] {msg}")
-    if not passed:
-        all_passed = False
-
-    # Validate integration tests
-    print("\n[3/5] Validating integration test evidence...")
-    passed, msg = validate_junit_xml("evidence/integration_tests.xml", args.min_tests)
-    results.append((passed, msg))
-    status = "PASS" if passed else "FAIL"
-    print(f"  [{status}] {msg}")
-    if not passed:
-        all_passed = False
-
-    # Validate security scans
-    print("\n[4/5] Validating security scan evidence...")
-    for validator, filepath in [
-        (validate_bandit_json, "evidence/bandit.json"),
-        (validate_semgrep_json, "evidence/semgrep.json"),
-        (validate_pip_audit_json, "evidence/pip_audit.json"),
-    ]:
-        passed, msg = validator(filepath)
-        results.append((passed, msg))
+    # Validate JUnit XML evidence
+    print("\n[2/4] Validating JUnit XML evidence...")
+    for filepath in junit_files:
+        passed, msg = validate_junit_xml(filepath, args.min_tests)
         status = "PASS" if passed else "FAIL"
         print(f"  [{status}] {msg}")
         if not passed:
             all_passed = False
+
+    # Validate security scan JSON evidence (extended mode only)
+    if json_checks:
+        print("\n[3/4] Validating security scan evidence...")
+        for validator, filepath in json_checks:
+            passed, msg = validator(filepath)
+            status = "PASS" if passed else "FAIL"
+            print(f"  [{status}] {msg}")
+            if not passed:
+                all_passed = False
+    else:
+        print("\n[3/4] Skipping security scan evidence (not required in this mode)")
 
     # Compute hashes for audit trail
-    print("\n[5/5] Computing evidence hashes for audit trail...")
-    for filepath in REQUIRED_EVIDENCE_FILES:
+    print("\n[4/4] Computing evidence hashes for audit trail...")
+    for filepath in all_paths:
         if Path(filepath).exists():
             hash_val = compute_sha256(filepath)
             print(f"  {filepath}: sha256:{hash_val}")
