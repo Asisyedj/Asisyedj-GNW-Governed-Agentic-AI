@@ -8,3 +8,14 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Local scratch, logs, temporary reports, and local credentials
+scratch/
+ci_logs/
+*.log
+aws_console_login_url.txt
+report.xml
+.manus/
+chrome-devtools-mcp/
+
+

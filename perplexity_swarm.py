@@ -53,22 +53,22 @@ def _get_api_key() -> str:
 # Define the Flagship Swarm Agents
 SWARM_MEMBERS = {
     "claude_sonnet_55": {
-        "name": "Claude Sonnet 5.5 Thinking",
-        "model_id": "anthropic/claude-sonnet-5.5-thinking",
+        "name": "Claude Sonnet Thinking",
+        "model_id": "anthropic/claude-sonnet-4.6-thinking",
         "role": "Chief Architect & Reasoning Synthesizer",
         "max_thinking_prompt": (
-            "You are Claude Sonnet 5.5 operating at MAXIMUM COGNITIVE & REASONING BUDGET. "
+            "You are Claude Sonnet operating at MAXIMUM COGNITIVE & REASONING BUDGET. "
             "Engage in deep, multi-step chain-of-thought. Deconstruct the problem from first principles, "
             "evaluate critical trade-offs, question latent assumptions, synthesize divergent viewpoints, "
             "and formulate mathematically sound, high-leverage architectural conclusions."
         ),
     },
     "gpt_61_sol": {
-        "name": "GPT-6.1 Sol Thinking",
-        "model_id": "openai/gpt-6.1-sol-thinking",
+        "name": "GPT-5 Reasoning",
+        "model_id": "openai/gpt5",
         "role": "Logic, Algorithmic & Strategic Specialist",
         "max_thinking_prompt": (
-            "You are GPT-6.1 Sol operating at MAXIMUM REASONING DEPTH. Engage in exhaustive "
+            "You are GPT-5 operating at MAXIMUM REASONING DEPTH. Engage in exhaustive "
             "chain-of-thought reasoning. Provide rigorous step-by-step logic, formal verification, "
             "algorithmic precision, and optimize for zero error tolerance and maximal computational leverage."
         ),
@@ -84,21 +84,21 @@ SWARM_MEMBERS = {
         ),
     },
     "gemini_38_flash": {
-        "name": "Gemini 3.8 Flash Thinking",
-        "model_id": "google/gemini-3.8-flash-thinking",
+        "name": "Gemini 3.7 Flash Thinking",
+        "model_id": "google/gemini-3.7-flash-thinking",
         "role": "High-Velocity Explorer & Multi-Domain Connector",
         "max_thinking_prompt": (
-            "You are Gemini 3.8 Flash operating in MAXIMUM THINKING MODE. Rapidly cross-reference "
+            "You are Gemini 3.7 Flash operating in MAXIMUM THINKING MODE. Rapidly cross-reference "
             "multidisciplinary domains, map the full problem topography, discover non-obvious connections, "
             "and establish expansive architectural solutions with high velocity and clarity."
         ),
     },
     "kimi_k3": {
-        "name": "Kimi K3 Thinking",
-        "model_id": "moonshot/kimi-k3-thinking",
+        "name": "Kimi K2.6 Thinking",
+        "model_id": "moonshot/kimi-k2.6-thinking",
         "role": "Long-Horizon CoT & Multi-Step Verifier",
         "max_thinking_prompt": (
-            "You are Kimi K3 operating with MAXIMUM REASONING TRACE. Exhaustively trace state transitions, "
+            "You are Kimi K2.6 operating with MAXIMUM REASONING TRACE. Exhaustively trace state transitions, "
             "verify causal dependency graphs, evaluate long-horizon second- and third-order effects, and audit "
             "intricate execution chains without skipping intermediate derivations."
         ),
@@ -159,6 +159,24 @@ class PerplexitySwarm:
                 }
         except Exception as exc:
             duration = time.time() - start_time
+            # Attempt AWS Bedrock fallback if available
+            try:
+                from src.bedrock_client import BedrockModelClient
+                bedrock = BedrockModelClient()
+                bedrock_resp = bedrock.invoke_model(
+                    model_id="amazon.nova-micro-v1:0",
+                    prompt=f"{system_message}\n\nUser: {prompt}"
+                )
+                if bedrock_resp.get("success"):
+                    return {
+                        "success": True,
+                        "content": str(bedrock_resp.get("output", "")),
+                        "duration": round(time.time() - start_time, 2),
+                        "model": f"{model_id} (Bedrock-Fallback)",
+                    }
+            except Exception:
+                pass
+
             return {
                 "success": False,
                 "error": str(exc),

@@ -1,0 +1,36 @@
+{
+  "family": "perplexity-browser-api-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::106139565701:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "perplexity-browser-api",
+      "image": "106139565701.dkr.ecr.ap-southeast-2.amazonaws.com/perplexity-browser-api:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "hostPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "GNW_PG_DSN",
+          "value": "postgresql://user:pass@localhost:5432/dbname"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/perplexity-browser-api",
+          "awslogs-region": "ap-southeast-2",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
