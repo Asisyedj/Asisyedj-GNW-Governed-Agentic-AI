@@ -1,95 +1,83 @@
 {
-  "timestamp": "2026-10-26T00:00:00Z",
+  "timestamp": "2026-10-28T10:32:00Z",
   "session_id": "ses_e88150ca8ffeRusl8i8kSXNcZa",
-  "phase": "ALL_P0_P1_P2_P3_COMPLETE",
+  "phase": "PHASE_6_ANTIGRAVITY_ACTIVATED",
   "bridge": {
     "status": "HEALTHY",
     "pid": 12372,
     "port": 8000,
     "health_endpoint": "PASS",
     "models_endpoint": "PASS (84 models available after DISABLED_MODELS filter)",
-    "chat_endpoint": "UPSTREAM_503 (Perplexity service unavailable - external dependency)"
+    "mcp_transport": "STDIO_JSON_RPC_2_0"
   },
-  "supervisor": {
-    "state": "HEALTHY",
-    "failures": 0,
-    "restarts": 1,
-    "check_interval_sec": 30,
-    "failure_threshold": 3,
-    "recovery_cooldown_sec": 60,
-    "max_restarts": 5,
-    "port_release_wait_sec": 5
+  "antigravity_plugin": {
+    "id": "perplexity-bridge",
+    "name": "GNW Perplexity Frontier Model Bridge",
+    "version": "1.0.0",
+    "path": "~/.gemini/config/plugins/perplexity-bridge/",
+    "interpreter": "D:\\GNW\\perplexity-browser-api\\.venv\\Scripts\\python.exe",
+    "status": "QUALIFIED_STAGING",
+    "models_routed": 84,
+    "sla_dispatch_overhead": "<1.5s",
+    "evidence_merkle_digest": "a2452d707d8e681f2bb179fb0520938267fc7b830524a78fc5b5639514dd25d7",
+    "file_hashes": {
+      "plugin.json": "D0952067F46BF5E77007F40DE3A2A70BF5213A7DC08B5CA97C4C405C07D572A4",
+      "mcp_config.json": "B8C3EB46A59532D709D707AFE7EDE66FF1ABF95C23C5BBF8577B7B567EBABC2C",
+      "README.md": "4B56100B4585A97535ACD48EECDA36696B46875670CE19FE329E9FB4E7E43570",
+      "rules/AGENTS.md": "A179EC55174DF5A0A437F63188135B27E832D6FD14ADD68FDD4FB2B2EDDE0A52",
+      "skills/perplexity-bridge/SKILL.md": "03877DFC4995CEDEC4292B062B7D1AE3722C7315037DB904EB150ED966295C42"
+    },
+    "governance": {
+      "zero_bypass_routing": true,
+      "dpapi_zeroization": "VERIFIED (Task 09 Contract)",
+      "stream_hygiene": "JSON_RPC_STDOUT_ONLY"
+    }
   },
-  "model_health": {
-    "total_catalog": 99,
-    "catalog_available": 92,
-    "catalog_unknown": 5,
-    "catalog_unavailable": 2,
-    "healthy": 0,
-    "unverified": 92,
-    "quarantined": 0,
-    "unknown": 5,
-    "unavailable": 2,
-    "blocker": "Perplexity upstream 503 on all chat/completions - external dependency",
-    "snapshot_persistence": "IMPLEMENTED (load_snapshot/save_snapshot)"
+  "benchmark_20_heavy_tasks": {
+    "status": "20/20 PASSED (100%)",
+    "total_duration_sec": 79.74,
+    "concurrency_batch_size": 4,
+    "batches_executed": 5,
+    "report_md": "gnw_20_heavy_tasks_evaluation_report.md",
+    "report_json": "gnw_20_heavy_tasks_evaluation_report.json"
   },
-  "nvidia_models": {
-    "available_in_opencode": 12,
-    "nemotron_3_5_super_vl_120b": "nvidia/nvidia/nemotron-3.5-super-vl-120b-a12b",
-    "nemotron_3_5_bolt_e4b": "NOT_IN_CATALOG",
-    "free_access_verified": true,
-    "rate_limits": "Unknown - free tier"
-  },
-  "opencode": {
-    "version": "v2.1.2",
-    "providers_configured": ["nvidia", "deepseek", "google", "openai", "opencode", "perplexity-agent"],
-    "auth_status": "NVIDIA_CONNECTED"
-  },
-  "next_actions": [
-    "Monitor Perplexity upstream status for 503 resolution (Antigravity - external dependency)",
-    "Router circuit breaker handles 503 as transient - COMPLETED",
-    "Health snapshot persistence - COMPLETED",
-    "Nemotron 3.5 Super VL integrated into DEFAULT_TASK_ROUTING - COMPLETED",
-    "OpenCode agents created - COMPLETED (.opencode/agents/)"
-  ],
-  "verification": {
-    "test_suite": "29/29 PASSED",
-    "test_api": "HEALTH_CHECK=PASS, UNAUTHORIZED_REQUEST=PASS, AUTHENTICATED_MODELS=PASS (84), API_INVOCATION=UPSTREAM_503",
-    "supervisor_state_machine": "FAILED -> RECOVERING -> HEALTHY verified (reaches HEALTHY in ~30s)",
-    "router_transient_503": "VERIFIED - 503 does not trip circuit breaker, falls back correctly",
-    "git_dirty_files": 12,
-    "governance_files_created": 6,
-    "opencode_agents_created": 4
+  "swarm_consensus_council": {
+    "council_date": "2026-10-28",
+    "quorum_verdict": "CONDITIONAL PASS (Production Staging Approved)",
+    "participating_models": [
+      {
+        "model": "anthropic/claude37sonnetthinking",
+        "verdict": "AUDIT_READY",
+        "key_finding": "Stdio process isolation valid; latency budget and stream separation rigor confirmed"
+      },
+      {
+        "model": "google/gemini-3.7-flash-thinking",
+        "verdict": "CONDITIONAL_PASS",
+        "key_finding": "Loopback elimination approved; heap copy zeroization and worker queue concurrency remediations noted"
+      },
+      {
+        "model": "x-ai/grok-4.5",
+        "verdict": "CONDITIONAL_PASS",
+        "key_finding": "Stdio-first isolation sound; host LSP trust boundary and signed manifest controls recommended"
+      },
+      {
+        "model": "moonshot/kimi-k2.6-thinking",
+        "verdict": "CONDITIONAL_PASS",
+        "key_finding": "Formal 5-state worker lifecycle (idle, busy, timed-out, zeroizing, recycled) established"
+      }
+    ]
   },
   "git": {
-    "branch": "master",
-    "commit": "fc9d350",
-    "dirty_files": [
-      "personal_agent/agent/llm.py",
-      "personal_agent/agent/planner.py",
-      "personal_agent/memory/sqlite_store.py",
-      "personal_agent/plugins/registry.py",
-      "bridge_daemon.py",
-      "personal_agent/bridge/supervisor.py",
-      "personal_agent/agent/router.py",
-      "personal_agent/health/model_health.py",
-      "personal_agent/tests/test_model_router_and_resilience.py",
-      "test_api.py",
-      "pyproject.toml"
-    ],
-    "governance_files_created": [
-      "GNW_MISSION.md",
-      "GNW_BACKLOG.md",
-      "GNW_STATE.json",
-      "GNW_EVIDENCE.md",
-      "GNW_RISK_REGISTER.md",
-      "GNW_OPEN_CODE_HANDOFF.md"
-    ],
-    "opencode_agents_created": [
-      ".opencode/agents/researcher.json",
-      ".opencode/agents/architect.json",
-      ".opencode/agents/tester.json",
-      ".opencode/agents/security.json"
-    ]
-  }
+    "branch": "remediation/phase5-sandbox-sink-contracts-2026-09-15",
+    "commit": "ab7d61bd1716d66dd63d583f4d03f1d1f5197a14",
+    "tree": "6f44df17d7d166abd511c9fbf2a76b61a5ed5ae8",
+    "canonical_base_commit": "7f408afc7e5feadc1649cc44e75ba8b2c0c5d162",
+    "canonical_remote_tree": "794af8a7bd1deeaadd3abf34049684be58b0d5c4",
+    "tree_variance": "Contains Phase 5/6 20-heavy-tasks benchmark engine, tests, plugin manifests, and audit reports"
+  },
+  "next_actions": [
+    "Restart Antigravity host/IDE to discover newly assembled plugin directory ~/.gemini/config/plugins/perplexity-bridge/",
+    "Run plugin live sanity check in chat via customization://perplexity-bridge",
+    "Incorporate Council 5-state worker recycling lifecycle into next minor release (v1.1.0)"
+  ]
 }

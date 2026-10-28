@@ -1,0 +1,11 @@
+{
+  "name": "perplexity-bridge",
+  "displayName": "GNW Perplexity Frontier Model Bridge",
+  "description": "Enterprise-grade GNW bridge providing unified MCP access and cognitive swarm orchestration across 84 frontier models (Claude 3.7/4.5/5, GPT-5/5.6-sol, Grok 4.7, Gemini 3.7).",
+  "version": "1.0.0",
+  "suggestedPrompts": [
+    "Check GNW Perplexity Bridge daemon health",
+    "List active 84 frontier models in local catalog",
+    "Query Claude 3.7 Thinking or GPT-5.6 Sol via GNW Swarm"
+  ]
+}

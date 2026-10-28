@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "perplexity-models": {
+      "command": "D:\\GNW\\perplexity-browser-api\\.venv\\Scripts\\python.exe",
+      "args": [
+        "D:\\GNW\\perplexity-browser-api\\mcp_server.py"
+      ],
+      "env": {
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}

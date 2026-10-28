@@ -1,0 +1,33 @@
+name: Phase 6 Plugin Activation
+on:
+  push:
+    branches: [remediation/phase5-sandbox-sink-contracts-2026-09-15]
+  pull_request:
+    branches: [remediation/phase5-sandbox-sink-contracts-2026-09-15]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run 20 Heavy Tasks Benchmark Engine
+        run: |
+          export GNW_SKIP_LIVE_SWARM=1
+          python scripts/run_20_heavy_tasks.py
+
+      - name: Verify Engine Unit Tests
+        run: |
+          python -m unittest tests/test_20_tasks_engine.py
