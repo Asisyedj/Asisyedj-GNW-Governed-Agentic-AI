@@ -82,16 +82,33 @@ function awsUriPath(bucket: string, key: string) {
   return `/${encodeURIComponent(bucket).replace(/%2F/g, "/")}/${key.split("/").map(encodeURIComponent).join("/")}`;
 }
 
+function objectUriPath(key: string) {
+  return `/${key.split("/").map(encodeURIComponent).join("/")}`;
+}
+
 function awsHost(env: Env) {
   if (env.s3.endpoint) return new URL(env.s3.endpoint).host;
   return `s3.${env.s3.region || "us-east-1"}.amazonaws.com`;
 }
 
-function awsEndpoint(env: Env, bucket: string, key: string) {
+/** Build the canonical S3 request URL for either path-style or virtual-hosted addressing. */
+export function buildS3RequestUrl(env: Env, bucket: string, key: string): URL {
   const base = env.s3.endpoint ? new URL(env.s3.endpoint) : new URL(`https://${awsHost(env)}`);
-  base.pathname = awsUriPath(bucket, key);
+  if (env.s3.urlStyle === "virtual") {
+    // Railway Buckets use <bucket>.<endpoint-host>/<object-key>.
+    base.hostname = `${bucket}.${base.hostname}`;
+    base.pathname = objectUriPath(key);
+  } else {
+    // Keep the legacy path-style behaviour for existing S3-compatible endpoints.
+    base.pathname = awsUriPath(bucket, key);
+  }
   base.search = "";
+  base.hash = "";
   return base;
+}
+
+function awsEndpoint(env: Env, bucket: string, key: string) {
+  return buildS3RequestUrl(env, bucket, key);
 }
 
 async function signedS3Request(method: "GET" | "PUT", key: string, body: Buffer | undefined, contentType: string | undefined, env: Env) {

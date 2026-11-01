@@ -53,6 +53,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env) {
       bucket: source.S3_BUCKET ?? "",
       region: source.S3_REGION ?? "",
       endpoint: source.S3_ENDPOINT ?? "",
+      urlStyle: ((source.S3_URL_STYLE ?? "path").trim().toLowerCase() as "path" | "virtual"),
       accessKeyId: source.S3_ACCESS_KEY_ID ?? "",
       secretAccessKey: source.S3_SECRET_ACCESS_KEY ?? "",
       publicBaseUrl: source.S3_PUBLIC_BASE_URL ?? "",
@@ -98,7 +99,7 @@ export function readinessReport(env: Env = ENV): ReadinessReport {
     database: env.databaseUrl ? "ok" : "missing",
     owner_bootstrap: env.ownerEmail && env.ownerPassword ? "ok" : "degraded",
     llm: env.llmApiKey ? "ok" : "degraded",
-    storage: env.storageDriver === "s3" ? (env.s3.bucket && env.s3.accessKeyId ? "ok" : "missing") : "degraded",
+    storage: env.storageDriver === "s3" ? (env.s3.bucket && env.s3.region && env.s3.accessKeyId && env.s3.secretAccessKey ? "ok" : "missing") : "degraded",
     video_provider: env.videoProviderUrl ? "ok" : "degraded",
     notifications: env.notifyWebhookUrl ? "ok" : "degraded",
     grant_signing: env.requireSignedGrants && env.grantPrivateKeyPem && env.grantPublicKeyPem ? "ok" : env.requireSignedGrants ? "missing" : "degraded",
@@ -127,7 +128,8 @@ export function assertProductionEnvironment(env: Env = ENV) {
   if (!env.ownerEmail || !env.ownerPassword) failures.push("OWNER_EMAIL and OWNER_PASSWORD are required in production bootstrap");
   if (env.allowSelfRegistration) failures.push("ALLOW_SELF_REGISTRATION must be false in production");
   if (env.storageDriver !== "s3") failures.push("Production requires durable S3-compatible object storage; set STORAGE_DRIVER=s3");
-  if (env.storageDriver === "s3" && !(env.s3.bucket && env.s3.accessKeyId && env.s3.secretAccessKey)) failures.push("S3 storage selected but S3_BUCKET/S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY are incomplete");
+  if (env.storageDriver === "s3" && !(env.s3.bucket && env.s3.region && env.s3.accessKeyId && env.s3.secretAccessKey)) failures.push("S3 storage selected but S3_BUCKET/S3_REGION/S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY are incomplete");
+  if (env.storageDriver === "s3" && env.s3.urlStyle !== "path" && env.s3.urlStyle !== "virtual") failures.push("S3_URL_STYLE must be path or virtual");
   if (!env.requireSignedGrants) failures.push("GNW_REQUIRE_SIGNED_GRANTS must be true in production");
   if (env.requireSignedGrants && !(env.grantIssuer && env.grantPrivateKeyPem && env.grantPublicKeyPem)) failures.push("Signed grant issuer keys are required in production");
   if (env.grantTtlMs <= 0 || env.grantTtlMs > env.maxGrantTtlMs) failures.push("GRANT_TTL_MS must be positive and <= MAX_GRANT_TTL_MS");
