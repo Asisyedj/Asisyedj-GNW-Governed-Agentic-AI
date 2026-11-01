@@ -18,6 +18,7 @@ One codebase, three supported targets. The database adapter chooses its dialect 
 | `STORAGE_DRIVER` | no | `local` | `local` or `s3`. |
 | `ARTIFACT_DIR` | no | `./data/artifacts` | Local driver only; point it at a mounted volume. |
 | `S3_BUCKET` / `S3_REGION` / `S3_ENDPOINT` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | if `s3` | — | Incomplete S3 configuration refuses to boot in production. |
+| `S3_URL_STYLE` | no | `path` | `path` or `virtual`; Railway Buckets require `virtual`, with an exact bucket-host egress allowlist (for example `*.t3.storageapi.dev`). |
 | `NOTIFY_WEBHOOK_URL` | no | — | Owner notifications are always persisted; the webhook is an extra channel. |
 | `MAX_BUDGET_TOKENS` / `MAX_BUDGET_BYTES` | no | `100000` / `50000000` | Ceilings the gateway enforces on every grant. |
 | `GRANT_TTL_MS` / `APPROVAL_TTL_MS` | no | `600000` / `900000` | Lifetime of a grant and of an approval window. |
