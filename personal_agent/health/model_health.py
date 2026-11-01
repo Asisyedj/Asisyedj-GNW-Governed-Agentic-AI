@@ -80,59 +80,76 @@ class ModelHealthRegistry:
     def __init__(self, router: ModelRouter | None = None):
         self.router = router or global_router
         self.records: Dict[str, ModelHealthRecord] = {}
-        self._load_catalog()
-        # Load any persisted snapshot to retain health state across restarts
+        self._catalog_loaded = False
+        self._catalog_error: str | None = None
+        # Loading a module must not read host credentials or make a network call.
+        # The authenticated model catalog is fetched lazily on first use.
         try:
             self.load_snapshot()
         except Exception as exc:
-            logger.warning("Failed to load health snapshot on init: %s", exc)
-        self.records: Dict[str, ModelHealthRecord] = {}
-        self._load_catalog()
+            logger.warning("Failed to load health snapshot on init: %s", type(exc).__name__)
 
     # ------------------------------------------------------------------
     # Catalog handling
     # ------------------------------------------------------------------
-    def _load_catalog(self) -> None:
-        """Populate ``self.records`` from the authenticated /v1/models endpoint.
+    def _load_catalog(self) -> bool:
+        """Load the authenticated bridge catalog without making secrets a test prerequisite.
 
-        The bridge returns a JSON object with a ``data`` list where each entry
-        contains an ``id`` and a nested ``perplexity`` dict that includes a
-        ``status`` field. Models not present are ignored.
+        Missing credentials or an unavailable local bridge leave the registry
+        empty and fail closed. The failure is recorded by type only; secret
+        contents and authorization headers are never logged.
         """
-        key = get_bridge_key()
-        req = urllib.request.Request(
-            "http://127.0.0.1:8000/v1/models",
-            headers={"Authorization": f"Bearer {key}"},
-        )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            catalog = json.load(resp)
+        try:
+            key = get_bridge_key()
+            req = urllib.request.Request(
+                "http://127.0.0.1:8000/v1/models",
+                headers={"Authorization": f"Bearer {key}"},
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                catalog = json.load(resp)
+        except Exception as exc:
+            self._catalog_loaded = True
+            self._catalog_error = type(exc).__name__
+            logger.warning(
+                "Model catalog unavailable; swarm remains closed until refresh (%s)",
+                self._catalog_error,
+            )
+            return False
+
+        updated: Dict[str, ModelHealthRecord] = {}
         for entry in catalog.get("data", []):
             model_id = entry.get("id")
             if not model_id:
                 continue
             status = entry.get("perplexity", {}).get("status", "unknown")
-            # Map catalog status to initial health state
             if status == "available":
                 health = HealthState.UNVERIFIED
             elif status == "unknown":
                 health = HealthState.UNKNOWN
             else:
                 health = HealthState.UNAVAILABLE
-            self.records[model_id] = ModelHealthRecord(
-                model_id=model_id, catalog_status=status, health_state=health
+            previous = self.records.get(model_id)
+            record = ModelHealthRecord(
+                model_id=model_id,
+                catalog_status=status,
+                health_state=health,
             )
+            if previous is not None:
+                record.health_state = previous.health_state
+                record.last_probe_ts = previous.last_probe_ts
+                record.last_error = previous.last_error
+                record.latency_ms = list(previous.latency_ms)
+            updated[model_id] = record
 
-    def refresh_catalog(self) -> None:
-        """Reload the catalog and preserve any existing health information.
-        New entries are added; missing entries are removed.
-        """
-        old = {mid: rec.health_state for mid, rec in self.records.items()}
-        self.records.clear()
-        self._load_catalog()
-        # Restore previous health where possible
-        for mid, state in old.items():
-            if mid in self.records:
-                self.records[mid].health_state = state
+        self.records = updated
+        self._catalog_loaded = True
+        self._catalog_error = None
+        return True
+
+    def refresh_catalog(self) -> bool:
+        """Explicitly retry the authenticated catalog load and preserve known health."""
+        self._catalog_loaded = False
+        return self._load_catalog()
 
     # ------------------------------------------------------------------
     # Probe handling
@@ -290,11 +307,11 @@ class ModelHealthRegistry:
         logger.info("ModelHealthRegistry snapshot loaded from %s", in_path)
 
     def eligible_models(self, min_state: HealthState = HealthState.HEALTHY) -> List[str]:
-        """Return model IDs whose health meets or exceeds ``min_state``.
-
-        Ordering is deterministic (sorted by model ID) to make selection
-        reproducible.
-        """
+        """Return eligible models; unavailable credentials/catalog fail closed to no models."""
+        if not self._catalog_loaded:
+            self._load_catalog()
+        if self._catalog_error is not None:
+            return []
         # Define ordering of enum values for comparison.
         order = {
             HealthState.UNVERIFIED: 0,
